@@ -221,6 +221,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
       timestamp,
       image: '',
       ...safeData,
+      mealType: data.mealType || 'other',
       healthInsight: '',
     });
 
@@ -239,6 +240,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
           fat: safeData.fat,
           serving: safeData.serving,
           health_insight: '',
+          meal_type: data.mealType || 'other',
         },
       });
       return;
@@ -257,6 +259,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
         fat: safeData.fat,
         serving: safeData.serving,
         health_insight: '',
+        meal_type: data.mealType || 'other',
       })
       .select()
       .single();

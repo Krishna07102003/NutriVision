@@ -68,8 +68,8 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
     { value: 'snack_am', label: 'Snacks', emoji: '🍪' },
   ];
 
-  const handleQuickAdd = async (food: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string }) => {
-    await nutrition.addManualEntry({ ...food, mealType: 'breakfast' });
+  const handleQuickAdd = async (food: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string; mealType?: string }) => {
+    await nutrition.addManualEntry({ ...food, mealType: food.mealType || 'other' });
     favorites.addRecent(food);
   };
 
