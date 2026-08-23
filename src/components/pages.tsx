@@ -15,7 +15,6 @@ import ErrorBanner from '../components/ErrorBanner';
 import MacroDonut from '../components/MacroDonut';
 import MealSection from '../components/MealSection';
 import DailyInsight from '../components/DailyInsight';
-import RecentMeals from '../components/RecentMeals';
 import DateNavigator from '../components/DateNavigator';
 import WaterTracker from '../components/WaterTracker';
 import WeightLog from '../components/WeightLog';
@@ -173,7 +172,6 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
         ))}
       </div>
 
-      <RecentMeals recent={favorites.recent} onAdd={handleQuickAdd} />
 
       <div className="grid md:grid-cols-2 gap-3 mb-8">
         <button
