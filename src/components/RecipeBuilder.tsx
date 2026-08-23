@@ -142,12 +142,12 @@ export default function RecipeBuilder({ recipes, onCreate, onDelete, onLog }: Re
                       <p className="text-sm text-[var(--text-primary)] font-bold truncate">{ing.name}</p>
                       <p className="text-[10px] text-[var(--text-muted)]">{Math.round(ing.calories * ing.quantity)} cal total</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button onClick={() => updateQuantity(i, ing.quantity - 1)} className="w-6 h-6 rounded border border-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-muted)]">-</button>
-                      <span className="text-sm text-[var(--text-primary)] font-bold tabular-nums w-6 text-center">{ing.quantity}</span>
-                      <button onClick={() => updateQuantity(i, ing.quantity + 1)} className="w-6 h-6 rounded border border-[var(--border-color)] flex items-center justify-center text-xs text-[var(--text-muted)]">+</button>
-                      <button onClick={() => removeIngredient(i)} className="ml-1">
-                        <X className="w-3 h-3 text-[var(--text-muted)]" />
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => updateQuantity(i, ing.quantity - 1)} className="w-10 h-10 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-sm text-[var(--text-muted)] active:bg-[var(--bg-hover)] transition-colors">-</button>
+                      <span className="text-sm text-[var(--text-primary)] font-bold tabular-nums w-8 text-center">{ing.quantity}</span>
+                      <button onClick={() => updateQuantity(i, ing.quantity + 1)} className="w-10 h-10 rounded-lg border border-[var(--border-color)] flex items-center justify-center text-sm text-[var(--text-muted)] active:bg-[var(--bg-hover)] transition-colors">+</button>
+                      <button onClick={() => removeIngredient(i)} className="w-10 h-10 flex items-center justify-center rounded-lg active:bg-red-500/10 transition-colors">
+                        <X className="w-4 h-4 text-[var(--text-muted)]" />
                       </button>
                     </div>
                   </div>

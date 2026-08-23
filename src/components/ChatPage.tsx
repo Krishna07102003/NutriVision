@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { ArrowLeft, Send, Bot, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -18,14 +18,32 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
   const { t } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Handle iOS keyboard open/close
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      const height = window.innerHeight;
+      const visibleHeight = vv.height;
+      // If viewport shrunk significantly, keyboard is likely open
+      const diff = height - visibleHeight;
+      setKeyboardHeight(diff > 100 ? diff : 0);
+    };
+
+    vv.addEventListener('resize', handleResize);
+    vv.addEventListener('scroll', handleResize);
+    return () => {
+      vv.removeEventListener('resize', handleResize);
+      vv.removeEventListener('scroll', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  }, [chatHistory, keyboardHeight]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +51,15 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-120px)] sm:h-[calc(100vh-120px)]">
+    <div
+      className="flex flex-col"
+      style={{
+        height: keyboardHeight > 0
+          ? `calc(100dvh - ${120 + keyboardHeight}px)`
+          : 'calc(100dvh - 120px)',
+        transition: 'height 0.2s ease',
+      }}
+    >
       {/* Chat header */}
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[var(--border-color)]">
         <button onClick={() => navigate('/')} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
@@ -67,15 +93,15 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
                 <Bot className="w-3.5 h-3.5 text-accent" />
               </div>
             )}
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+            <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
               msg.role === 'user'
-                ? 'bg-accent text-white font-bold rounded-br-md'
-                : 'bg-[var(--bg-card)] text-[var(--text-primary)] rounded-bl-md'
+                ? 'bg-accent text-white rounded-br-md'
+                : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-bl-md'
             }`}>
-              {msg.content}
+              <p className="whitespace-pre-line">{msg.content}</p>
             </div>
             {msg.role === 'user' && (
-              <div className="w-7 h-7 bg-[var(--bg-card)] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+              <div className="w-7 h-7 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                 <User className="w-3.5 h-3.5 text-[var(--text-muted)]" />
               </div>
             )}
@@ -84,14 +110,14 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
 
         {chatLoading && (
           <div className="flex gap-3">
-            <div className="w-7 h-7 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-7 h-7 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
               <Bot className="w-3.5 h-3.5 text-accent" />
             </div>
-            <div className="bg-[var(--bg-card)] rounded-2xl rounded-bl-md px-4 py-3">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] px-4 py-3 rounded-2xl rounded-bl-md">
               <div className="flex gap-1.5">
-                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -100,7 +126,7 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Input — stays above keyboard */}
       <form onSubmit={handleSubmit} className="flex gap-2 pt-4 border-t border-[var(--border-color)]">
         <input
           ref={inputRef}
