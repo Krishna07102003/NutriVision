@@ -77,6 +77,7 @@ export type OnboardingStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export const REFERRAL_OPTIONS = [
   { id: 'app-store', label: 'App Store', icon: '📱' },
+  { id: 'play-store', label: 'Play Store', icon: '🎮' },
   { id: 'youtube', label: 'YouTube', icon: '▶️' },
   { id: 'x', label: 'X', icon: '❌' },
   { id: 'friend-family', label: 'Friend or family', icon: '👥' },
