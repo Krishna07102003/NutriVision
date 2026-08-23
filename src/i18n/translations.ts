@@ -43,7 +43,7 @@ export const translations = {
     logMeal: 'Log a meal',
     analyzing: 'Analyzing…',
     askCoach: 'Ask your coach',
-    mealPlan: '3-day meal plan',
+    mealPlan: '7-day meal plan',
     regeneratePlan: 'Regenerate plan',
     buildingPlan: 'Building plan...',
     myRecipes: 'My Recipes',

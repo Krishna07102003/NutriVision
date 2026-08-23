@@ -113,7 +113,7 @@ export default function AuthScreen() {
         Welcome to NutriVision
       </h2>
       <p className="text-sm text-[var(--text-muted)] max-w-sm mb-8 text-center leading-relaxed">
-        Log your gym macros, generate customized 3-day meal plans, and scan food plate pictures instantly using cloud AI analytics.
+        Log your gym macros, generate customized 7-day meal plans, and scan food plate pictures instantly using cloud AI analytics.
       </p>
 
       {error && (
