@@ -33,6 +33,7 @@ import PWAInstall from './components/PWAInstall';
 import FeedbackForm from './components/FeedbackForm';
 
 const INITIAL_FORM: OnboardingFormData = {
+  referralSource: '', previousApps: '', painPoints: [], accomplishment: '',
   name: '', weight: '', height: '', age: '', gender: '',
   goal: '', dietType: '', activityLevel: '',
 };
@@ -69,18 +70,23 @@ function AppContent() {
 
   const handleOnboarding = async () => {
     try {
-      if (onboardingStep === 0 && formData.name && formData.weight && formData.height && formData.age && formData.gender) {
-        // Validate inputs before advancing
+      // Phase 1: Pre-survey screens (0-4) — just advance
+      if (onboardingStep < 5) {
+        setOnboardingStep((onboardingStep + 1) as OnboardingStep);
+        return;
+      }
+      // Phase 2: Body data screens (5-7)
+      if (onboardingStep === 5 && formData.name && formData.weight && formData.height && formData.age && formData.gender) {
         const safeName = sanitizeText(formData.name.trim());
         if (!safeName) { nutrition.setErrorMsg('Please enter a valid name.'); return; }
         if (!isValidWeight(formData.weight)) { nutrition.setErrorMsg('Please enter a valid weight (20-300 kg).'); return; }
         if (!isValidHeight(formData.height)) { nutrition.setErrorMsg('Please enter a valid height (50-250 cm).'); return; }
         if (!isValidAge(formData.age)) { nutrition.setErrorMsg('Please enter a valid age (10-120).'); return; }
         setFormData({ ...formData, name: safeName });
-        setOnboardingStep(1);
-      } else if (onboardingStep === 1 && formData.goal && formData.activityLevel) {
-        setOnboardingStep(2);
-      } else if (onboardingStep === 2 && formData.dietType) {
+        setOnboardingStep(6);
+      } else if (onboardingStep === 6 && formData.goal && formData.activityLevel) {
+        setOnboardingStep(7);
+      } else if (onboardingStep === 7 && formData.dietType) {
         await auth.saveUserProfile({ ...formData, gender: formData.gender as UserProfile['gender'] });
       }
     } catch (err: unknown) {

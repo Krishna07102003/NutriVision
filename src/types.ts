@@ -55,6 +55,12 @@ export interface ChatMessage {
 }
 
 export interface OnboardingFormData {
+  // Phase 1: Pre-survey (screens 0-4)
+  referralSource: string;
+  previousApps: string; // 'yes' | 'no'
+  painPoints: string[]; // multi-select
+  accomplishment: string;
+  // Phase 2: Body data (screens 5-7)
   name: string;
   weight: string;
   height: string;
@@ -65,7 +71,35 @@ export interface OnboardingFormData {
   activityLevel: string;
 }
 
-export type OnboardingStep = 0 | 1 | 2;
+export type OnboardingStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+// === Phase 1: Pre-Survey Options ===
+
+export const REFERRAL_OPTIONS = [
+  { id: 'app-store', label: 'App Store', icon: '📱' },
+  { id: 'youtube', label: 'YouTube', icon: '▶️' },
+  { id: 'x', label: 'X', icon: '❌' },
+  { id: 'friend-family', label: 'Friend or family', icon: '👥' },
+  { id: 'instagram', label: 'Instagram', icon: '📸' },
+  { id: 'tv', label: 'TV', icon: '📺' },
+  { id: 'tiktok', label: 'TikTok', icon: '🎵' },
+  { id: 'google', label: 'Google', icon: '🔍' },
+] as const;
+
+export const PAIN_POINT_OPTIONS = [
+  { id: 'consistency', label: 'Lack of consistency', icon: '📊' },
+  { id: 'unhealthy-habits', label: 'Unhealthy eating habits', icon: '🍔' },
+  { id: 'support', label: 'Lack of support', icon: '🤝' },
+  { id: 'busy-schedule', label: 'Busy schedule', icon: '📅' },
+  { id: 'meal-inspiration', label: 'Lack of meal inspiration', icon: '🍎' },
+] as const;
+
+export const ACCOMPLISHMENT_OPTIONS = [
+  { id: 'healthier', label: 'Eat and live healthier', icon: '🍎' },
+  { id: 'energy-mood', label: 'Boost my energy and mood', icon: '☀️' },
+  { id: 'motivated', label: 'Stay motivated and consistent', icon: '💪' },
+  { id: 'body-confident', label: 'Feel better about my body', icon: '🧘' },
+] as const;
 
 export const GOAL_OPTIONS = [
   { id: 'weight-loss', label: 'Weight Loss', desc: 'Reduce body fat with a calorie deficit' },
