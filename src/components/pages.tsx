@@ -104,14 +104,13 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <DateNavigator
-          selectedDate={nutrition.selectedDate}
-          onChange={nutrition.setSelectedDate}
-          isToday={nutrition.isToday}
-        />
+      <DateNavigator
+        selectedDate={nutrition.selectedDate}
+        onChange={nutrition.setSelectedDate}
+        isToday={nutrition.isToday}
+      >
         <StreakBadge entries={nutrition.entries} />
-      </div>
+      </DateNavigator>
 
       <div className="flex flex-wrap justify-center gap-4 sm:gap-8 md:gap-12 mb-8 py-6 sm:py-8 px-4 card">
         <MacroDonut label={t('calories')} current={Math.round(nutrition.selectedTotals.calories)} goal={auth.goals.calories} unit=" kcal" ringVar="--ring-calories" />

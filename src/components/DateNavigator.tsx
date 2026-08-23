@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface DateNavigatorProps {
   selectedDate: Date;
   onChange: (date: Date) => void;
   isToday: boolean;
+  children?: ReactNode;
 }
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -29,7 +30,7 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-export default function DateNavigator({ selectedDate, onChange, isToday }: DateNavigatorProps) {
+export default function DateNavigator({ selectedDate, onChange, isToday, children }: DateNavigatorProps) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
@@ -173,6 +174,7 @@ export default function DateNavigator({ selectedDate, onChange, isToday }: DateN
             </div>
           )}
         </div>
+        {children && <div className="ml-2 shrink-0">{children}</div>}
       </div>
 
       {/* Weekly day strip */}
