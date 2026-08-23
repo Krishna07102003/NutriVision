@@ -69,8 +69,10 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
   ];
 
   const handleQuickAdd = async (food: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string; mealType?: string }) => {
-    await nutrition.addManualEntry({ ...food, mealType: food.mealType || 'other' });
-    favorites.addRecent(food);
+    // If no mealType provided, default to breakfast (Recent Meals now provides it)
+    const mealType = food.mealType || 'breakfast';
+    await nutrition.addManualEntry({ ...food, mealType });
+    favorites.addRecent({ ...food, mealType });
   };
 
   const handleManualEntry = async (data: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string; mealType: string }) => {
@@ -299,8 +301,9 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
       {showBarcode && (
         <BarcodeScanner
           onResult={(food) => {
-            nutrition.addManualEntry({ ...food, mealType: quickMenuMealType || 'breakfast' });
-            favorites.addRecent(food);
+            const mt = quickMenuMealType || 'breakfast';
+            nutrition.addManualEntry({ ...food, mealType: mt });
+            favorites.addRecent({ ...food, mealType: mt });
             setShowBarcode(false);
           }}
           onClose={() => setShowBarcode(false)}
@@ -311,6 +314,7 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
       {showFoodSearch && (
         <FoodSearch
           onSelect={(food) => {
+            const mt = quickMenuMealType || 'breakfast';
             nutrition.addManualEntry({
               name: food.name,
               calories: food.calories,
@@ -318,9 +322,9 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
               carbs: food.carbs,
               fat: food.fat,
               serving: food.serving,
-              mealType: quickMenuMealType || 'breakfast',
+              mealType: mt,
             });
-            favorites.addRecent(food);
+            favorites.addRecent({ ...food, mealType: mt });
             setShowFoodSearch(false);
           }}
           onManualEntry={() => {

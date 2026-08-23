@@ -12,6 +12,7 @@ interface FoodToAdd {
   carbs: number;
   fat: number;
   serving: string;
+  mealType?: string;
 }
 
 interface UseFavoritesReturn {
