@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, BarChart3, MessageSquare, Calendar, User, Trash2, Menu, X, MessageSquareWarning } from 'lucide-react';
+import { Home, BarChart3, MessageSquare, Calendar, User, Trash2, Menu, X, MessageSquareWarning, LogOut } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './hooks/useAuth';
 import { useNutrition } from './hooks/useNutrition';
@@ -223,7 +223,7 @@ function AppContent() {
               </button>
               <button
                 onClick={() => supabase.auth.signOut()}
-                className="hidden sm:block text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors"
               >
                 {t('signOut')}
               </button>
@@ -234,22 +234,40 @@ function AppContent() {
           </div>
 
           {mobileNav && (
-            <nav className="md:hidden border-t border-[var(--border-color)] px-3 sm:px-6 py-2 sm:py-3 flex gap-1">
-              {NAV_ITEMS.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileNav(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition-colors flex-1 justify-center ${
-                      isActive ? 'bg-accent/10 text-accent font-bold' : 'text-[var(--text-muted)]'
-                    }`
-                  }
+            <div className="md:hidden border-t border-[var(--border-color)]">
+              <nav className="px-3 sm:px-6 py-2 sm:py-3 flex gap-1">
+                {NAV_ITEMS.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileNav(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs transition-colors flex-1 justify-center ${
+                        isActive ? 'bg-accent/10 text-accent font-bold' : 'text-[var(--text-muted)]'
+                      }`
+                    }
+                  >
+                    <item.icon className="w-4 h-4" />
+                  </NavLink>
+                ))}
+              </nav>
+              <div className="px-3 pb-3 flex gap-2">
+                <button
+                  onClick={() => { setShowFeedback(true); setMobileNav(false); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
-                  <item.icon className="w-4 h-4" />
-                </NavLink>
-              ))}
-            </nav>
+                  <MessageSquareWarning className="w-3.5 h-3.5" />
+                  {'Feedback'}
+                </button>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  {t('signOut')}
+                </button>
+              </div>
+            </div>
           )}
 
           {showProfile && (
