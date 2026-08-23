@@ -140,32 +140,7 @@ export default function AuthScreen() {
               <span>{loading ? 'Redirecting...' : 'Continue with Google'}</span>
             </button>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--border-color)]"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-[var(--bg-base)] text-[var(--text-muted)]">or continue with</span>
-              </div>
-            </div>
 
-            <button
-              onClick={() => setMethod('email')}
-              className="w-full flex items-center gap-3 bg-accent text-white px-6 py-3.5 rounded-lg font-bold text-sm hover:bg-accent-dim transition-all cursor-pointer"
-            >
-              <Mail className="w-4 h-4" />
-              <span>Email</span>
-              <ArrowRight className="w-4 h-4 ml-auto" />
-            </button>
-
-            <button
-              onClick={() => setMethod('phone')}
-              className="w-full flex items-center gap-3 bg-accent text-white px-6 py-3.5 rounded-lg font-bold text-sm hover:bg-accent-dim transition-all cursor-pointer"
-            >
-              <Phone className="w-4 h-4" />
-              <span>Phone</span>
-              <ArrowRight className="w-4 h-4 ml-auto" />
-            </button>
           </>
         )}
 
