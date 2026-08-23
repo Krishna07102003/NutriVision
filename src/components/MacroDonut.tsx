@@ -63,7 +63,7 @@ export default function MacroDonut({ label, current, goal, unit, ringVar }: Macr
           </span>
         </div>
       </div>
-      <span className="text-[10px] tracking-[0.15em] uppercase font-semibold mt-2" style={{ color: 'var(--text-muted)' }}>
+      <span className="text-[10px] tracking-[0.15em] uppercase font-bold mt-2" style={{ color: 'var(--text-muted)' }}>
         {label}
       </span>
     </div>

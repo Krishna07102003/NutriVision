@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, BarChart3, MessageSquare, Calendar, User, Trash2, Menu, X, MessageSquareWarning, LogOut } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './hooks/useAuth';
@@ -189,9 +189,9 @@ function AppContent() {
         <header className="header-gradient-border sticky top-0 bg-[var(--bg-base)]/90 backdrop-blur-xl z-40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight shimmer-text" style={{ fontFamily: "'Georgia', serif" }}>
+              <Link to="/" className="text-base sm:text-lg font-bold tracking-tight shimmer-text hover:opacity-80 transition-opacity" style={{ fontFamily: "'Georgia', serif" }}>
                 {t('appName')}
-              </h1>
+              </Link>
               <nav className="hidden md:flex items-center gap-1">
                 {NAV_ITEMS.map((item) => (
                   <NavLink
