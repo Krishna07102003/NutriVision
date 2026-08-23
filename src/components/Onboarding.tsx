@@ -427,17 +427,17 @@ export default function Onboarding({ formData, setFormData, step, onNext, onBack
           )}
 
           {/* ===== Continue Button ===== */}
-          <div className="mt-8 mb-6">
+          <div className="mt-10 mb-6">
             <button
               onClick={onNext}
               disabled={!canProceed}
-              className={`w-full py-4 rounded-2xl text-sm font-bold transition-all ${
+              className={`w-full py-4 rounded-[14px] text-[15px] font-semibold tracking-wide transition-all duration-200 ${
                 canProceed
-                  ? 'bg-[var(--text-primary)] text-white hover:opacity-90'
+                  ? 'bg-[var(--text-primary)] text-white shadow-lg shadow-black/20 hover:scale-[1.01] active:scale-[0.98]'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
               }`}
             >
-              {step === 7 ? 'Enter' : step === 4 ? 'Continue' : 'Continue'}
+              {step === 7 ? 'Enter' : 'Continue'}
             </button>
           </div>
 
