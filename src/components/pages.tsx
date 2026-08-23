@@ -196,7 +196,7 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
         </button>
       </div>
 
-      {coach.dietPlan && <DietPlan plan={coach.dietPlan} />}
+      {coach.dietPlan && <DietPlan plan={coach.dietPlan} onDelete={coach.deleteDietPlan} />}
 
       {nutrition.selectedEntries.length > 0 && nutrition.isToday && (
         <DailyInsight aiCoach={coach.aiCoach} loadingCoach={coach.loadingCoach} onGenerate={coach.getAICoaching} />

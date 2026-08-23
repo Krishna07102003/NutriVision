@@ -19,6 +19,7 @@ interface UseCoachReturn {
   generateDietPlan: () => Promise<void>;
   sendChatMessage: () => Promise<void>;
   setDietPlan: (plan: string | null) => void;
+  deleteDietPlan: () => Promise<void>;
 }
 
 export function useCoach(
@@ -51,7 +52,22 @@ export function useCoach(
         setChatHistory(data.map((row) => ({ role: row.role, content: row.content })));
       }
     };
+
+    const loadDietPlan = async () => {
+      const { data } = await supabase
+        .from('diet_plans')
+        .select('plan_text')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.plan_text) {
+        setDietPlan(data.plan_text);
+      }
+    };
+
     loadChatHistory();
+    loadDietPlan();
   }, [userId]);
 
   const getAICoaching = async () => {
@@ -135,6 +151,12 @@ export function useCoach(
     }
   };
 
+  const deleteDietPlan = async () => {
+    if (!userId) return;
+    await supabase.from('diet_plans').delete().eq('user_id', userId);
+    setDietPlan(null);
+  };
+
   return {
     aiCoach,
     loadingCoach,
@@ -150,5 +172,6 @@ export function useCoach(
     generateDietPlan,
     sendChatMessage,
     setDietPlan,
+    deleteDietPlan,
   };
 }
