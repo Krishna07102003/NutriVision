@@ -82,8 +82,6 @@ export const REFERRAL_OPTIONS = [
   { id: 'x', label: 'X', icon: '❌' },
   { id: 'friend-family', label: 'Friend or family', icon: '👥' },
   { id: 'instagram', label: 'Instagram', icon: '📸' },
-  { id: 'tv', label: 'TV', icon: '📺' },
-  { id: 'tiktok', label: 'TikTok', icon: '🎵' },
   { id: 'google', label: 'Google', icon: '🔍' },
 ] as const;
 
