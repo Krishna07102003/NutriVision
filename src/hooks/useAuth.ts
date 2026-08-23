@@ -114,7 +114,7 @@ export function useAuth(): AuthState & {
     calculateGoals(profile);
   };
 
-  const saveUserProfile = async (profile: UserProfile) => {
+  const saveUserProfile = async (profile: UserProfile & { referralSource?: string; previousApps?: string; painPoints?: string[]; accomplishment?: string }) => {
     const { error } = await supabase.from('user_profiles').upsert({
       id: userId,
       name: profile.name,
@@ -125,6 +125,10 @@ export function useAuth(): AuthState & {
       goal: profile.goal,
       diet_type: profile.dietType,
       activity_level: profile.activityLevel,
+      referral_source: profile.referralSource || '',
+      previous_apps: profile.previousApps || '',
+      pain_points: profile.painPoints || [],
+      accomplishment: profile.accomplishment || '',
       updated_at: new Date().toISOString(),
     });
 
