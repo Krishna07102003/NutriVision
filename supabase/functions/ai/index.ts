@@ -161,15 +161,20 @@ serve(async (req) => {
       }
     }
 
+    const generationConfig = {
+      maxOutputTokens: 8192,
+      temperature: 0.7,
+    };
+
     let result;
 
     if (image) {
       result = await model.generateContent([
         { inlineData: { mimeType: image.mimeType, data: image.data } },
         prompt,
-      ]);
+      ], { generationConfig });
     } else {
-      result = await model.generateContent(prompt);
+      result = await model.generateContent(prompt, { generationConfig });
     }
 
     const text = result.response.text();
