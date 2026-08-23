@@ -304,6 +304,8 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     }
   };
 
+  const MAX_PHOTO_UPLOADS_PER_DAY = 4;
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, mealType?: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -311,6 +313,22 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     setErrorMsg(null);
 
     try {
+      // Check daily photo upload limit
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const { count } = await supabase
+        .from('nutrition_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .not('image_url', 'is', null)
+        .gte('timestamp', startOfDay);
+
+      if ((count ?? 0) >= MAX_PHOTO_UPLOADS_PER_DAY) {
+        setErrorMsg(`You've reached the daily limit of ${MAX_PHOTO_UPLOADS_PER_DAY} photo uploads. Try logging meals manually instead.`);
+        setAnalyzing(false);
+        return;
+      }
+
       // Validate file before processing
       const fileCheck = validateFileUpload(file);
       if (!fileCheck.valid) {
