@@ -5,7 +5,7 @@ import ThemeToggle from './ThemeToggle';
 import { isValidEmail, isValidPhone, isValidOTP, sanitizeText } from '../utils/validation';
 import { checkLimit, resetRateLimit, cleanupRateLimits } from '../utils/rateLimit';
 
-type AuthMethod = 'choose' | 'email' | 'phone' | 'otp';
+type AuthMethod = 'choose' | 'email' | 'phone' | 'otp' | 'link-sent';
 
 export default function AuthScreen() {
   const [method, setMethod] = useState<AuthMethod>('choose');
@@ -49,8 +49,7 @@ export default function AuthScreen() {
     if (error) {
       setError(error.message);
     } else {
-      setOtpSent(true);
-      setMethod('otp');
+      setMethod('link-sent');
     }
     setLoading(false);
   };
@@ -188,7 +187,7 @@ export default function AuthScreen() {
             <button
               onClick={handleSendEmailOtp}
               disabled={loading || !email.trim()}
-              className="w-full bg-accent text-white py-3.5 rounded-lg font-bold text-sm hover:bg-accent-dim disabled:bg-[var(--bg-hover)] disabled:text-[var(--text-muted)] transition-colors mt-6">{loading ? 'Sending...' : 'Send verification code'}</button>
+              className="w-full bg-accent text-white py-3.5 rounded-lg font-bold text-sm hover:bg-accent-dim disabled:bg-[var(--bg-hover)] disabled:text-[var(--text-muted)] transition-colors mt-6">{loading ? 'Sending...' : 'Send sign-in link'}</button>
           </>
         )}
 
@@ -221,6 +220,21 @@ export default function AuthScreen() {
             <input type="text" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && handleVerifyOtp()} placeholder="000000" className="w-full bg-transparent border-b border-[var(--border-color)] focus:border-[var(--accent)] px-0 py-3 text-2xl tracking-[0.3em] text-center text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none transition-colors" />
             <button onClick={handleVerifyOtp} disabled={loading || otp.length !== 6} className="w-full bg-accent text-white py-3.5 rounded-lg font-bold text-sm hover:bg-accent-dim disabled:bg-[var(--bg-hover)] disabled:text-[var(--text-muted)] transition-colors mt-6">{loading ? 'Verifying...' : 'Verify & Sign In'}</button>
             <button onClick={() => { setOtp(''); if (email) handleSendEmailOtp(); else handleSendPhoneOtp(); }} disabled={loading} className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] mt-3">Resend code</button>
+          </>
+        )}
+
+        {method === 'link-sent' && (
+          <>
+            <button onClick={goBack} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] text-sm mb-6"><ArrowLeft className="w-4 h-4" /> Back</button>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-5">
+                <Mail className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Check your email</h3>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">We've sent a sign-in link to<br /><span className="font-bold text-[var(--text-primary)]">{email}</span></p>
+              <p className="text-xs text-[var(--text-muted)]">Click the link in your email to sign in. The link will open in this browser.</p>
+              <button onClick={() => { setMethod('link-sent'); handleSendEmailOtp(); }} disabled={loading} className="w-full text-center text-sm text-[var(--text-muted)] hover:text-[var(--text-secondary)] mt-6">Didn't receive it? Resend link</button>
+            </div>
           </>
         )}
       </div>
