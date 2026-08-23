@@ -62,10 +62,10 @@ export default function ManualEntry({ onSubmit, onClose, initialMealType = 'brea
                   key={mt.value}
                   type="button"
                   onClick={() => setMealType(mt.value)}
-                  className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg text-[11px] font-semibold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-lg text-[11px] font-semibold transition-all ${
                     mealType === mt.value
-                      ? 'bg-accent/20 text-accent border border-accent/40'
-                      : 'bg-[var(--bg-hover)] text-[var(--text-muted)] border border-transparent hover:border-[var(--border-color)]'
+                      ? 'bg-accent text-white border-2 border-accent shadow-md shadow-accent/20'
+                      : 'bg-[var(--bg-hover)] text-[var(--text-muted)] border-2 border-transparent hover:border-[var(--border-color)]'
                   }`}
                 >
                   <span className="text-base">{mt.emoji}</span>

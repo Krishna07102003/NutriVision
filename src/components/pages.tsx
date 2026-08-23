@@ -325,7 +325,6 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
           }}
           onManualEntry={() => {
             setShowFoodSearch(false);
-            setManualMealType('breakfast');
             setShowManualEntry(true);
           }}
           onClose={() => setShowFoodSearch(false)}
