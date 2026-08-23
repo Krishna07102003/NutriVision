@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, Plus, ChevronDown, ChevronUp, Image, Search } from 'lucide-react';
 import type { NutritionEntry } from '../types';
 import MealCard from './MealCard';
@@ -19,6 +19,13 @@ interface MealSectionProps {
 export default function MealSection({ title, emoji, entries, onDelete, onEdit, onAddManual, onAddCamera, onAddGallery, onAddSearch, mealType }: MealSectionProps) {
   const [expanded, setExpanded] = useState(entries.length > 0);
   const [showActions, setShowActions] = useState(false);
+
+  // Auto-expand when entries are added to an empty section
+  useEffect(() => {
+    if (entries.length > 0 && !expanded) {
+      setExpanded(true);
+    }
+  }, [entries.length]);
 
   const totalCal = entries.reduce((s, e) => s + (e.calories || 0), 0);
 
