@@ -299,9 +299,8 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
       {showBarcode && (
         <BarcodeScanner
           onResult={(food) => {
-            const mt = quickMenuMealType || 'breakfast';
-            nutrition.addManualEntry({ ...food, mealType: mt });
-            favorites.addRecent({ ...food, mealType: mt });
+            nutrition.addManualEntry({ ...food, mealType: manualMealType });
+            favorites.addRecent({ ...food, mealType: manualMealType });
             setShowBarcode(false);
           }}
           onClose={() => setShowBarcode(false)}
@@ -312,7 +311,6 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
       {showFoodSearch && (
         <FoodSearch
           onSelect={(food) => {
-            const mt = quickMenuMealType || 'breakfast';
             nutrition.addManualEntry({
               name: food.name,
               calories: food.calories,
@@ -320,9 +318,9 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
               carbs: food.carbs,
               fat: food.fat,
               serving: food.serving,
-              mealType: mt,
+              mealType: manualMealType,
             });
-            favorites.addRecent({ ...food, mealType: mt });
+            favorites.addRecent({ ...food, mealType: manualMealType });
             setShowFoodSearch(false);
           }}
           onManualEntry={() => {
