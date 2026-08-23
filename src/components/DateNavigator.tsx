@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface DateNavigatorProps {
   selectedDate: Date;
@@ -15,7 +15,7 @@ const MONTHS = [
 
 function getWeekStart(date: Date) {
   const d = new Date(date);
-  const day = d.getDay(); // 0 = Sunday
+  const day = d.getDay();
   d.setDate(d.getDate() - day);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -38,7 +38,6 @@ export default function DateNavigator({ selectedDate, onChange, isToday }: DateN
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Get the 7 days of the current week
   const weekStart = getWeekStart(selectedDate);
   const weekDays = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(weekStart);
@@ -52,7 +51,6 @@ export default function DateNavigator({ selectedDate, onChange, isToday }: DateN
     day: 'numeric',
   });
 
-  // Navigate weeks
   const prevWeek = () => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() - 7);
@@ -67,7 +65,6 @@ export default function DateNavigator({ selectedDate, onChange, isToday }: DateN
 
   const canGoNextWeek = weekDays[6] < today;
 
-  // Close calendar when clicking outside
   useEffect(() => {
     if (!showCalendar) return;
     const handler = (e: MouseEvent) => {
@@ -110,36 +107,24 @@ export default function DateNavigator({ selectedDate, onChange, isToday }: DateN
     if (d <= today) { onChange(d); setShowCalendar(false); }
   };
 
+  const toggleCalendar = () => setShowCalendar(!showCalendar);
+
   return (
     <div className="mb-4">
-      {/* Header row: "Today" + calendar icon */}
+      {/* Header row: "Today ▼" clickable to open calendar */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-[var(--text-primary)]">{headerText}</h1>
-          {!isToday && (
-            <button
-              onClick={() => onChange(new Date())}
-              className="text-xs font-medium text-accent hover:underline"
-            >
-              (Today)
-            </button>
-          )}
-        </div>
         <div className="relative" ref={calendarRef}>
           <button
-            onClick={() => setShowCalendar(!showCalendar)}
-            className={`p-2 rounded-lg border transition-colors ${
-              showCalendar
-                ? 'border-accent bg-accent/10'
-                : 'border-[var(--border-color)] hover:border-[var(--accent)]'
-            }`}
+            onClick={toggleCalendar}
+            className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
           >
-            <Calendar className="w-4 h-4 text-accent" />
+            <h1 className="text-xl font-bold text-[var(--text-primary)]">{headerText}</h1>
+            <ChevronDown className={`w-4 h-4 text-[var(--text-secondary)] transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Full calendar popup */}
+          {/* Calendar dropdown */}
           {showCalendar && (
-            <div className="absolute right-0 top-full mt-2 z-50 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-xl p-3 w-[280px]">
+            <div className="absolute left-0 top-full mt-2 z-50 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-xl p-3 w-[280px]">
               <div className="flex items-center justify-between mb-3">
                 <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)]">
                   <ChevronLeft className="w-4 h-4 text-[var(--text-secondary)]" />
