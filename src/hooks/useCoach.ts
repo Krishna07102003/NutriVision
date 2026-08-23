@@ -82,7 +82,7 @@ export function useCoach(
     }
     setLoadingDietPlan(true);
     try {
-      const plan = await askGemini(`Create a simple 3-day meal plan for a ${userProfile.dietType} person. Goal: ${userProfile.goal}. Daily target: ${goals.calories} calories, ${goals.protein}g protein.\n\nFormat it like this simple menu style - NO headers, NO bullet points, NO bold text, NO client profile section. Just plain text:\n\nDay 1\nBreakfast: [food item] - [calories] cal, [protein]g protein\nMid-Morning Snack: [food item] - [calories] cal, [protein]g protein\nLunch: [food item] - [calories] cal, [protein]g protein\nEvening Snack: [food item] - [calories] cal, [protein]g protein\nDinner: [food item] - [calories] cal, [protein]g protein\n\n(Repeat for 3 days total)\n\nKeep meals simple, practical, easy to cook. Use common ingredients. No markdown formatting.`);
+      const plan = await askGemini(`Create a simple 7-day meal plan for a ${userProfile.dietType} person. Goal: ${userProfile.goal}. Daily target: ${goals.calories} calories, ${goals.protein}g protein.\n\nFormat it like this simple menu style - NO headers, NO bullet points, NO bold text, NO client profile section. Just plain text:\n\nDay 1\nBreakfast: [food item] - [calories] cal, [protein]g protein\nMid-Morning Snack: [food item] - [calories] cal, [protein]g protein\nLunch: [food item] - [calories] cal, [protein]g protein\nEvening Snack: [food item] - [calories] cal, [protein]g protein\nDinner: [food item] - [calories] cal, [protein]g protein\n\n(Repeat for 7 days total)\n\nKeep meals simple, practical, easy to cook. Use common ingredients. No markdown formatting.`);
       setDietPlan(plan || '');
 
       await supabase.from('diet_plans').upsert({
