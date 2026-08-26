@@ -324,6 +324,8 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, mealType?: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Capture upload time BEFORE any processing (compression, AI, storage upload takes seconds)
+    const uploadTimestamp = new Date().toISOString();
     isUploadingRef[0] = true;
     setAnalyzing(true);
     setErrorMsg(null);
@@ -391,12 +393,11 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
         throw new Error('Could not parse nutrition data from the AI response.');
       }
 
-      const timestamp = new Date().toISOString();
       const { data: inserted, error: insertError } = await supabase
         .from('nutrition_entries')
         .insert({
           user_id: userId,
-          timestamp,
+          timestamp: uploadTimestamp,
           image_url: imageUrl,
           name: nutrition.name,
           calories: nutrition.calories,
@@ -411,7 +412,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
         .single();
 
       if (insertError) throw insertError;
-      insertLocal({ id: inserted.id, timestamp, image: imageUrl, ...nutrition });
+      insertLocal({ id: inserted.id, timestamp: uploadTimestamp, image: imageUrl, ...nutrition });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Please try again.';
       setErrorMsg('Failed to log this meal. ' + message);
