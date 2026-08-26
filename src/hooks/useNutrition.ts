@@ -439,21 +439,14 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     const entry = entries.find((e) => e.id === id);
     if (!entry) return;
 
-    // Optimistic delete — remove from UI immediately
-    setDeletedEntry(entry);
+    // Remove from UI immediately
     setEntries((prev) => prev.filter((e) => e.id !== id));
-    setPendingUndo('delete');
-    startUndoTimer();
 
-    // Delete from database IMMEDIATELY (not after 5s delay)
-    // This ensures refresh won't bring it back
+    // Delete from database
     const { error } = await supabase.from('nutrition_entries').delete().eq('id', id).eq('user_id', userId);
     if (error) {
       setErrorMsg('Could not delete entry. ' + error.message);
-      // Restore on error
       setEntries((prev) => [entry, ...prev]);
-      setPendingUndo(null);
-      setDeletedEntry(null);
       return;
     }
 
@@ -480,34 +473,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     }
   };
 
-  const undoDelete = async () => {
-    clearUndoTimer();
-    if (deletedEntry) {
-      // Re-insert the deleted entry back into database
-      const { data: restored, error } = await supabase
-        .from('nutrition_entries')
-        .insert({
-          user_id: userId,
-          timestamp: deletedEntry.timestamp,
-          image_url: deletedEntry.image || '',
-          name: deletedEntry.name,
-          calories: deletedEntry.calories,
-          protein: deletedEntry.protein,
-          carbs: deletedEntry.carbs,
-          fat: deletedEntry.fat,
-          serving: deletedEntry.serving,
-          health_insight: deletedEntry.healthInsight,
-          meal_type: deletedEntry.mealType || 'other',
-        })
-        .select()
-        .single();
-
-      if (error) {
-        setErrorMsg('Could not restore entry. ' + error.message);
-      } else {
-        setEntries((prev) => [{ ...deletedEntry, id: restored.id }, ...prev]);
-      }
-    }
+  const undoDelete = () => {
     setPendingUndo(null);
     setDeletedEntry(null);
   };
