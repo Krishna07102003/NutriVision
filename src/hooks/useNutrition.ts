@@ -174,6 +174,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
 
   const showSuccessMsg = () => {
     setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const insertLocal = (entry: NutritionEntry) => {
