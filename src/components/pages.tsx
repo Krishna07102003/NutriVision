@@ -284,14 +284,14 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => nutrition.handleImageUpload(e, manualMealType)}
+        onChange={(e) => { nutrition.handleImageUpload(e, manualMealType); e.target.value = ''; }}
       />
       <input
         ref={galleryInputRef}
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => nutrition.handleImageUpload(e, manualMealType)}
+        onChange={(e) => { nutrition.handleImageUpload(e, manualMealType); e.target.value = ''; }}
       />
 
       {/* Barcode Scanner */}

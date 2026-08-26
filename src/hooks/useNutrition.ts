@@ -59,7 +59,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
 
   useEffect(() => {
     if (userId) {
-      loadEntries();
+      loadEntries(true);
       cleanupOldPhotos();
       syncOfflineQueue();
     }
@@ -129,8 +129,8 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     } catch {}
   };
 
-  const loadEntries = async () => {
-    setLoadingEntries(true);
+  const loadEntries = async (isInitial = false) => {
+    if (isInitial) setLoadingEntries(true);
     const { data, error } = await supabase
       .from('nutrition_entries')
       .select('*')
@@ -156,7 +156,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
         }))
       );
     }
-    setLoadingEntries(false);
+    if (isInitial) setLoadingEntries(false);
   };
 
   const showSuccessMsg = () => {
@@ -214,7 +214,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     };
 
     // Optimistic UI: add immediately
-    const tempId = 'temp_' + Date.now();
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
     const timestamp = new Date().toISOString();
     insertLocal({
       id: tempId,
