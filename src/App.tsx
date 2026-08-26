@@ -156,11 +156,22 @@ function AppContent() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]" style={{ fontFamily: 'system-ui' }}>
-        {/* Success Toast */}
+        {/* Meal Logged Popup */}
         {nutrition.showSuccess && (
-          <div className="fixed top-6 right-6 z-50 bg-[var(--bg-card)] border border-[#38BDF8]/20 text-[var(--text-primary)] px-5 py-3 rounded-lg shadow-2xl flex items-center gap-3 text-sm">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-            {t('mealLogged')}
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => nutrition.setShowSuccess(false)}>
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 mx-6 max-w-xs w-full shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
+              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              </div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">Meal Logged</h3>
+              <p className="text-sm text-[var(--text-muted)] mb-5">Your meal has been added successfully</p>
+              <button
+                onClick={() => nutrition.setShowSuccess(false)}
+                className="w-full py-3 rounded-xl bg-accent text-white text-sm font-bold hover:opacity-90 transition-opacity"
+              >
+                OK
+              </button>
+            </div>
           </div>
         )}
 

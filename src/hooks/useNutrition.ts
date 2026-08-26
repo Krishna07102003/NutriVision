@@ -27,6 +27,7 @@ interface UseNutritionReturn {
   errorMsg: string | null;
   setErrorMsg: (msg: string | null) => void;
   showSuccess: boolean;
+  setShowSuccess: (v: boolean) => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, mealType?: string) => Promise<void>;
   addManualEntry: (data: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string; mealType?: string }) => Promise<void>;
   addFoodFromDatabase: (food: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string; mealType?: string }) => Promise<void>;
@@ -173,7 +174,6 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
 
   const showSuccessMsg = () => {
     setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 2000);
   };
 
   const insertLocal = (entry: NutritionEntry) => {
@@ -655,6 +655,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     errorMsg,
     setErrorMsg,
     showSuccess,
+    setShowSuccess,
     handleImageUpload,
     addManualEntry,
     addFoodFromDatabase,
