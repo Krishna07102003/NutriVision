@@ -56,9 +56,11 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
   const [quickMenuStep, setQuickMenuStep] = useState<'type' | 'action'>('type');
   const [quickMenuMealType, setQuickMenuMealType] = useState('breakfast');
   const [showBarcode, setShowBarcode] = useState(false);
+  const [galleryKey, setGalleryKey] = useState(0);
+  const [cameraKey, setCameraKey] = useState(0);
 
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const QUICK_MEAL_TYPES = [
     { value: 'breakfast', label: 'Breakfast', emoji: '☕' },
@@ -277,21 +279,23 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
         <Plus className={`w-6 h-6 transition-transform ${showQuickMenu ? 'rotate-45' : ''}`} />
       </button>
 
-      {/* Hidden photo inputs */}
+      {/* Hidden photo inputs - key forces React to destroy and recreate input, allowing same file to be selected again */}
       <input
+        key={`camera-${cameraKey}`}
         ref={photoInputRef}
         type="file"
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => { nutrition.handleImageUpload(e, manualMealType); e.target.value = ''; }}
+        onChange={(e) => { nutrition.handleImageUpload(e, manualMealType); setCameraKey(k => k + 1); }}
       />
       <input
+        key={`gallery-${galleryKey}`}
         ref={galleryInputRef}
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => { nutrition.handleImageUpload(e, manualMealType); e.target.value = ''; }}
+        onChange={(e) => { nutrition.handleImageUpload(e, manualMealType); setGalleryKey(k => k + 1); }}
       />
 
       {/* Barcode Scanner */}
