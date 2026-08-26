@@ -319,6 +319,28 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     }
   };
 
+  // Image hash cache for duplicate detection — reuses nutritional data for same images
+  const IMAGE_CACHE_KEY = 'nutrivision-image-cache';
+  const getImageCache = (): Record<string, { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string; healthInsight: string; imageUrl: string }> => {
+    try { return JSON.parse(localStorage.getItem(IMAGE_CACHE_KEY) || '{}'); } catch { return {}; }
+  };
+  const setImageCache = (cache: Record<string, unknown>) => {
+    // Keep cache under 50 entries to avoid bloat
+    const keys = Object.keys(cache);
+    if (keys.length > 50) {
+      const trimmed: Record<string, unknown> = {};
+      keys.slice(-50).forEach(k => trimmed[k] = cache[k]);
+      localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(trimmed));
+    } else {
+      localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(cache));
+    }
+  };
+  const hashBlob = async (blob: Blob): Promise<string> => {
+    const buffer = await blob.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
   const MAX_PHOTO_UPLOADS_PER_DAY = 4;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, mealType?: string) => {
@@ -358,39 +380,76 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
       const compressedBlob = await compressImage(file, 800, 0.7);
       const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
 
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const resultStr = reader.result as string;
-          resolve(resultStr.split(',')[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(compressedBlob);
-      });
+      // Hash the compressed image to detect duplicates
+      const imageHash = await hashBlob(compressedBlob);
+      const cache = getImageCache();
+      const cachedData = cache[imageHash];
 
-      const safeFileName = sanitizeStoragePath(`${Date.now()}-${file.name}`);
-      const filePath = `${userId}/${safeFileName}`;
-      const { error: uploadError } = await supabase.storage
-        .from('meal-images')
-        .upload(filePath, compressedFile, { contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('meal-images')
-        .getPublicUrl(filePath);
-      const imageUrl = publicUrlData.publicUrl;
-
-      const text = await askGeminiVision(
-        file.type,
-        base64,
-        'Analyze this food image and provide nutritional estimates. Also give a brief health insight (1 sentence). Respond ONLY with valid JSON (no markdown) in this format: {"name": "food name", "calories": number, "protein": number, "carbs": number, "fat": number, "serving": "serving size description", "healthInsight": "brief insight"}'
-      );
-
+      let imageUrl: string;
       let nutrition: NutritionData;
-      try {
-        nutrition = JSON.parse(text.replace(/```json|```/g, '').trim());
-      } catch {
-        throw new Error('Could not parse nutrition data from the AI response.');
+
+      if (cachedData) {
+        // Duplicate image found — reuse nutritional data, skip AI call
+        imageUrl = cachedData.imageUrl;
+        nutrition = {
+          name: cachedData.name,
+          calories: cachedData.calories,
+          protein: cachedData.protein,
+          carbs: cachedData.carbs,
+          fat: cachedData.fat,
+          serving: cachedData.serving,
+          healthInsight: cachedData.healthInsight,
+        };
+      } else {
+        // New image — upload to storage and call Gemini AI
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const resultStr = reader.result as string;
+            resolve(resultStr.split(',')[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedBlob);
+        });
+
+        const safeFileName = sanitizeStoragePath(`${Date.now()}-${file.name}`);
+        const filePath = `${userId}/${safeFileName}`;
+        const { error: uploadError } = await supabase.storage
+          .from('meal-images')
+          .upload(filePath, compressedFile, { contentType: 'image/jpeg' });
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('meal-images')
+          .getPublicUrl(filePath);
+        imageUrl = publicUrlData.publicUrl;
+
+        const text = await askGeminiVision(
+          file.type,
+          base64,
+          'Analyze this food image and provide nutritional estimates. Also give a brief health insight (1 sentence). Respond ONLY with valid JSON (no markdown) in this format: {"name": "food name", "calories": number, "protein": number, "carbs": number, "fat": number, "serving": "serving size description", "healthInsight": "brief insight"}'
+        );
+
+        try {
+          nutrition = JSON.parse(text.replace(/```json|```/g, '').trim());
+        } catch {
+          throw new Error('Could not parse nutrition data from the AI response.');
+        }
+
+        // Cache the nutritional data for this image hash
+        setImageCache({
+          ...cache,
+          [imageHash]: {
+            name: nutrition.name,
+            calories: nutrition.calories,
+            protein: nutrition.protein,
+            carbs: nutrition.carbs,
+            fat: nutrition.fat,
+            serving: nutrition.serving,
+            healthInsight: nutrition.healthInsight,
+            imageUrl,
+          },
+        });
       }
 
       const { data: inserted, error: insertError } = await supabase
