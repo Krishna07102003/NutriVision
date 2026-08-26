@@ -52,7 +52,7 @@ export function useWater(userId: string | null) {
         )
         .then(({ error }) => {
           savingRef.current = false;
-          if (error) console.error('Water sync failed:', error);
+          if (error && import.meta.env.DEV) console.error('Water sync failed:', error);
         });
 
       return next;
