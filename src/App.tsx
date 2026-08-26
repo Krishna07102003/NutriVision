@@ -31,6 +31,7 @@ import ConfirmSheet from './components/ConfirmSheet';
 import UndoToast from './components/UndoToast';
 import PWAInstall from './components/PWAInstall';
 import FeedbackForm from './components/FeedbackForm';
+import LoadingScreen from './components/LoadingScreen';
 
 const INITIAL_FORM: OnboardingFormData = {
   referralSource: '', previousApps: '', painPoints: [], accomplishment: '',
@@ -128,11 +129,7 @@ function AppContent() {
 
   // LOADING
   if (auth.authLoading) {
-    return (
-      <div className="min-h-screen bg-[var(--bg-base)] flex items-center justify-center text-[var(--text-muted)] text-sm">
-        {t('loading')}
-      </div>
-    );
+    return <LoadingScreen progress={0} status="Loading your profile" gender={auth.userProfile?.gender} />;
   }
 
   // SIGNED OUT
