@@ -56,6 +56,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
   const [deletedEntry, setDeletedEntry] = useState<NutritionEntry | null>(null);
   const [deletedEntries, setDeletedEntries] = useState<NutritionEntry[]>([]);
   const undoTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
+  const isUploadingRef = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -140,21 +141,32 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     if (error) {
       setErrorMsg('Could not load meal entries. ' + error.message);
     } else {
-      setEntries(
-        (data || []).map((row) => ({
-          id: row.id,
-          timestamp: row.timestamp,
-          image: row.image_url || '',
-          name: row.name,
-          calories: row.calories,
-          protein: row.protein,
-          carbs: row.carbs,
-          fat: row.fat,
-          serving: row.serving || '',
-          healthInsight: row.health_insight || '',
-          mealType: row.meal_type || 'other',
-        }))
-      );
+      const freshEntries = (data || []).map((row) => ({
+        id: row.id,
+        timestamp: row.timestamp,
+        image: row.image_url || '',
+        name: row.name,
+        calories: row.calories,
+        protein: row.protein,
+        carbs: row.carbs,
+        fat: row.fat,
+        serving: row.serving || '',
+        healthInsight: row.health_insight || '',
+        mealType: row.meal_type || 'other',
+      }));
+
+      if (isUploadingRef[0]) {
+        // During upload: merge fresh entries with any pending optimistic entries
+        setEntries((prev) => {
+          const tempEntries = prev.filter((e) => e.id.startsWith('temp_'));
+          const freshIds = new Set(freshEntries.map((e) => e.id));
+          // Keep temp entries whose IDs are not yet in the database
+          const pendingTemps = tempEntries.filter((e) => !freshIds.has(e.id));
+          return [...pendingTemps, ...freshEntries];
+        });
+      } else {
+        setEntries(freshEntries);
+      }
     }
     if (isInitial) setLoadingEntries(false);
   };
@@ -312,6 +324,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, mealType?: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    isUploadingRef[0] = true;
     setAnalyzing(true);
     setErrorMsg(null);
 
@@ -404,6 +417,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
       setErrorMsg('Failed to log this meal. ' + message);
     } finally {
       setAnalyzing(false);
+      isUploadingRef[0] = false;
     }
   };
 
