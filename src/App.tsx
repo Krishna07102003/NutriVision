@@ -137,6 +137,11 @@ function AppContent() {
     return <AuthScreen />;
   }
 
+  // LOADING DATA (after login, before dashboard is ready)
+  if (auth.userProfile && nutrition.loadingEntries && nutrition.entries.length === 0) {
+    return <LoadingScreen progress={60} status="Loading your nutrition data" gender={auth.userProfile?.gender} />;
+  }
+
   // ONBOARDING
   if (!auth.userProfile) {
     return (
