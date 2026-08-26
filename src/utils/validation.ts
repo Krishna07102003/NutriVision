@@ -151,3 +151,17 @@ export function validateRequired(value: string, fieldName: string): string | nul
   if (!value || value.trim().length === 0) return `${fieldName} is required.`;
   return null;
 }
+
+/** Get current local time in ISO format (preserves local timezone, not UTC) */
+export function localISO(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/** Get today's date string in local timezone (YYYY-MM-DD) */
+export function todayLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}

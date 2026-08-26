@@ -20,12 +20,18 @@ export function getQueue(): QueuedAction[] {
   }
 }
 
+function localISO(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 export function addToQueue(action: Omit<QueuedAction, 'id' | 'timestamp'>): void {
   const queue = getQueue();
   queue.push({
     ...action,
     id: crypto.randomUUID(),
-    timestamp: new Date().toISOString(),
+    timestamp: localISO(),
   });
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 }

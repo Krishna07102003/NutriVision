@@ -7,7 +7,7 @@ import { compressImage } from '../utils/imageCompression';
 import { addToQueue, isOnline, getQueue, removeFromQueue } from '../utils/offlineQueue';
 
 // Input validation
-import { sanitizeText, isValidFoodName, isValidCalories, isValidMacro, clampNumber } from '../utils/validation';
+import { sanitizeText, isValidFoodName, isValidCalories, isValidMacro, clampNumber, localISO, todayLocal } from '../utils/validation';
 import { checkLimit } from '../utils/rateLimit';
 
 function validateEntry(data: { name: string; calories: number; protein: number; carbs: number; fat: number; serving: string }): boolean {
@@ -227,7 +227,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
 
     // Optimistic UI: add immediately
     const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-    const timestamp = new Date().toISOString();
+    const timestamp = localISO();
     insertLocal({
       id: tempId,
       timestamp,
@@ -325,7 +325,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     const file = e.target.files?.[0];
     if (!file) return;
     // Capture upload time BEFORE any processing (compression, AI, storage upload takes seconds)
-    const uploadTimestamp = new Date().toISOString();
+    const uploadTimestamp = localISO();
     isUploadingRef[0] = true;
     setAnalyzing(true);
     setErrorMsg(null);
@@ -333,7 +333,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     try {
       // Check daily photo upload limit
       const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const startOfDay = todayLocal() + 'T00:00:00';
       const { count } = await supabase
         .from('nutrition_entries')
         .select('id', { count: 'exact', head: true })
