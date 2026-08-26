@@ -435,63 +435,84 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     }, 5000);
   };
 
-  const deleteEntry = (id: string) => {
+  const deleteEntry = async (id: string) => {
     const entry = entries.find((e) => e.id === id);
     if (!entry) return;
 
-    // Optimistic delete
+    // Optimistic delete — remove from UI immediately
     setDeletedEntry(entry);
     setEntries((prev) => prev.filter((e) => e.id !== id));
     setPendingUndo('delete');
     startUndoTimer();
 
-    // Actually delete after undo window
-    setTimeout(async () => {
+    // Delete from database IMMEDIATELY (not after 5s delay)
+    // This ensures refresh won't bring it back
+    const { error } = await supabase.from('nutrition_entries').delete().eq('id', id).eq('user_id', userId);
+    if (error) {
+      setErrorMsg('Could not delete entry. ' + error.message);
+      // Restore on error
+      setEntries((prev) => [entry, ...prev]);
       setPendingUndo(null);
       setDeletedEntry(null);
+      return;
+    }
 
-      // Delete the entry from DB
-      const { error } = await supabase.from('nutrition_entries').delete().eq('id', id).eq('user_id', userId);
-      if (error) setErrorMsg('Could not delete entry. ' + error.message);
+    // Clean up photo from storage if no other entries reference it
+    if (entry.image) {
+      try {
+        const { data: otherEntries } = await supabase
+          .from('nutrition_entries')
+          .select('id')
+          .eq('image_url', entry.image)
+          .neq('id', id)
+          .limit(1);
 
-      // Delete the photo from storage if it exists and no other entries reference it
-      if (entry.image) {
-        try {
-          // Check if any other entry uses the same image URL
-          const { data: otherEntries } = await supabase
-            .from('nutrition_entries')
-            .select('id')
-            .eq('image_url', entry.image)
-            .neq('id', id)
-            .limit(1);
-
-          // If no other entries reference this image, delete it
-          if (!otherEntries || otherEntries.length === 0) {
-            // Extract file path from URL
-            const urlParts = entry.image.split('/meal-images/');
-            if (urlParts.length > 1) {
-              const filePath = urlParts[1];
-              // Safety: only delete files in this user's folder
-              if (filePath.startsWith(userId + '/')) {
-                await supabase.storage.from('meal-images').remove([filePath]);
-              }
+        if (!otherEntries || otherEntries.length === 0) {
+          const urlParts = entry.image.split('/meal-images/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            if (filePath.startsWith(userId + '/')) {
+              await supabase.storage.from('meal-images').remove([filePath]);
             }
           }
-        } catch {}
-      }
-    }, 5000);
+        }
+      } catch {}
+    }
   };
 
-  const undoDelete = () => {
+  const undoDelete = async () => {
     clearUndoTimer();
     if (deletedEntry) {
-      setEntries((prev) => [deletedEntry, ...prev]);
+      // Re-insert the deleted entry back into database
+      const { data: restored, error } = await supabase
+        .from('nutrition_entries')
+        .insert({
+          user_id: userId,
+          timestamp: deletedEntry.timestamp,
+          image_url: deletedEntry.image || '',
+          name: deletedEntry.name,
+          calories: deletedEntry.calories,
+          protein: deletedEntry.protein,
+          carbs: deletedEntry.carbs,
+          fat: deletedEntry.fat,
+          serving: deletedEntry.serving,
+          health_insight: deletedEntry.healthInsight,
+          meal_type: deletedEntry.mealType || 'other',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        setErrorMsg('Could not restore entry. ' + error.message);
+      } else {
+        setEntries((prev) => [{ ...deletedEntry, id: restored.id }, ...prev]);
+      }
     }
     setPendingUndo(null);
     setDeletedEntry(null);
   };
 
-  const resetDay = () => {
+  const resetDay = async () => {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const todayEntries = entries.filter((e) => new Date(e.timestamp) >= startOfDay);
@@ -503,22 +524,48 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     setPendingUndo('reset');
     startUndoTimer();
 
-    // Actually delete after undo window
-    setTimeout(async () => {
+    // Delete from database IMMEDIATELY
+    const { error } = await supabase
+      .from('nutrition_entries')
+      .delete()
+      .eq('user_id', userId)
+      .gte('timestamp', startOfDay.toISOString());
+    if (error) {
+      setErrorMsg('Could not reset today. ' + error.message);
+      setEntries((prev) => [...todayEntries, ...prev]);
       setPendingUndo(null);
       setDeletedEntries([]);
-      const { error } = await supabase
-        .from('nutrition_entries')
-        .delete()
-        .eq('user_id', userId)
-        .gte('timestamp', startOfDay.toISOString());
-      if (error) setErrorMsg('Could not reset today. ' + error.message);
-    }, 5000);
+    }
   };
 
-  const undoReset = () => {
+  const undoReset = async () => {
     clearUndoTimer();
-    setEntries((prev) => [...deletedEntries, ...prev]);
+    if (deletedEntries.length > 0) {
+      // Re-insert all deleted entries back into database
+      const entriesToRestore = deletedEntries.map((e) => ({
+        user_id: userId,
+        timestamp: e.timestamp,
+        image_url: e.image || '',
+        name: e.name,
+        calories: e.calories,
+        protein: e.protein,
+        carbs: e.carbs,
+        fat: e.fat,
+        serving: e.serving,
+        health_insight: e.healthInsight,
+        meal_type: e.mealType || 'other',
+      }));
+      const { data: restored, error } = await supabase
+        .from('nutrition_entries')
+        .insert(entriesToRestore)
+        .select();
+
+      if (error) {
+        setErrorMsg('Could not restore entries. ' + error.message);
+      } else {
+        setEntries((prev) => [...restored.map((r, i) => ({ ...deletedEntries[i], id: r.id })), ...prev]);
+      }
+    }
     setPendingUndo(null);
     setDeletedEntries([]);
   };
