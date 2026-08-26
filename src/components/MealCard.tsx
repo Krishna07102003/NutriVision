@@ -39,12 +39,11 @@ export default function MealCard({ entry, onDelete, onEdit }: MealCardProps) {
     setEditing(false);
   };
 
-  // Color-code by calorie density
   const calorieLevel = entry.calories < 200 ? 'meal-low' : entry.calories < 500 ? 'meal-med' : 'meal-high';
 
   return (
-    <>
-      <div className={`flex gap-4 sm:gap-5 card rounded-card p-4 sm:p-5 ${calorieLevel}`}>
+    <div className="rounded-card overflow-hidden">
+      <div className={`flex gap-4 sm:gap-5 card p-4 sm:p-5 ${calorieLevel}`}>
         {entry.image ? (
           <img
             src={entry.image}
@@ -133,34 +132,28 @@ export default function MealCard({ entry, onDelete, onEdit }: MealCardProps) {
         </div>
       </div>
 
-      {/* Delete Confirmation Popup */}
+      {/* Inline Delete Confirmation — appears below the card, no backdrop */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 mx-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="text-center mb-1">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3">
-                <Trash2 className="w-6 h-6 text-red-400" />
-              </div>
-              <h3 className="text-base font-bold text-[var(--text-primary)]">Delete meal?</h3>
-              <p className="text-sm text-[var(--text-muted)] mt-1.5">Are you sure you want to delete <span className="font-semibold text-[var(--text-primary)]">{entry.name}</span>?</p>
-            </div>
-            <div className="flex gap-3 mt-5">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[var(--border-color)] text-sm font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-hover)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { setShowDeleteConfirm(false); onDelete(entry.id); }}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
+        <div className="bg-[var(--bg-card)] border border-t-0 border-[var(--border-color)] rounded-b-card px-4 py-3 flex items-center justify-between gap-3" onClick={(e) => e.stopPropagation()}>
+          <p className="text-sm text-[var(--text-muted)]">
+            Delete <span className="font-semibold text-red-400">{entry.name}</span>?
+          </p>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-3 py-1.5 rounded-lg border border-[var(--border-color)] text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-hover)] transition-colors"
+            >
+              No
+            </button>
+            <button
+              onClick={() => { setShowDeleteConfirm(false); onDelete(entry.id); }}
+              className="px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-colors"
+            >
+              Yes, delete
+            </button>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
