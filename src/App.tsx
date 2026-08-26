@@ -64,6 +64,7 @@ function AppContent() {
   const [showProfile, setShowProfile] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ weight: '', height: '', age: '', goal: '', dietType: '' });
@@ -196,6 +197,18 @@ function AppContent() {
           />
         )}
 
+        {/* Sign Out Confirm */}
+        {showSignOutConfirm && (
+          <ConfirmSheet
+            title="Sign out?"
+            message="Are you sure you want to sign out? Your data is safe and will be here when you come back."
+            confirmLabel="Sign out"
+            danger
+            onConfirm={() => { setShowSignOutConfirm(false); supabase.auth.signOut(); }}
+            onCancel={() => setShowSignOutConfirm(false)}
+          />
+        )}
+
         {/* HEADER */}
         <header className="header-gradient-border sticky top-0 bg-[var(--bg-base)]/90 backdrop-blur-xl z-40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
@@ -239,7 +252,7 @@ function AppContent() {
                 <Trash2 className="w-4 h-4" />
               </button>
               <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => setShowSignOutConfirm(true)}
                 className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm transition-colors"
               >
                 {t('signOut')}
@@ -277,7 +290,7 @@ function AppContent() {
                   {'Feedback'}
                 </button>
                 <button
-                  onClick={() => supabase.auth.signOut()}
+                  onClick={() => setShowSignOutConfirm(true)}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs text-red-400 hover:text-red-300 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
