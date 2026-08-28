@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
-const STEP_L = 1;
 const GOAL_L = 5;
 
 export interface WaterDay {
@@ -24,7 +23,7 @@ export function useWater(userId: string | null) {
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const loadToday = async () => {
-    // Get ALL rows for today (there may be duplicates from old broken upsert)
+    // Get latest row for today, clean duplicates
     const { data, error } = await supabase
       .from('water_intake')
       .select('id, litres')
@@ -35,14 +34,11 @@ export function useWater(userId: string | null) {
     if (error && import.meta.env.DEV) console.error('Water load error:', error);
 
     if (data && data.length > 0) {
-      // Keep only the latest row, delete duplicates
-      const latest = data[0];
-      setLitres(latest.litres ?? 0);
-
-      // Clean up duplicate rows (keep latest, delete rest)
+      setLitres(data[0].litres ?? 0);
+      // Delete duplicate rows silently
       if (data.length > 1) {
-        const idsToDelete = data.slice(1).map((r: { id: number }) => r.id);
-        await supabase.from('water_intake').delete().in('id', idsToDelete);
+        const ids = data.slice(1).map((r: { id: number }) => r.id);
+        await supabase.from('water_intake').delete().in('id', ids);
       }
     } else {
       setLitres(0);
@@ -54,28 +50,24 @@ export function useWater(userId: string | null) {
     const newLitres = Math.max(0, Math.min(GOAL_L, litres + amount));
     setLitres(newLitres);
 
-    // Get all rows for today
+    // Check if a row already exists for today
     const { data: existing } = await supabase
       .from('water_intake')
       .select('id')
       .eq('user_id', userId)
       .eq('date', todayStr())
-      .order('id', { ascending: false });
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (existing && existing.length > 0) {
-      // Update the latest row
+    if (existing?.id) {
+      // Update the single row
       await supabase
         .from('water_intake')
         .update({ litres: newLitres, updated_at: new Date().toISOString() })
-        .eq('id', existing[0].id);
-
-      // Delete any duplicates
-      if (existing.length > 1) {
-        const idsToDelete = existing.slice(1).map((r: { id: number }) => r.id);
-        await supabase.from('water_intake').delete().in('id', idsToDelete);
-      }
+        .eq('id', existing.id);
     } else {
-      // Insert new
+      // Insert first row for today
       await supabase
         .from('water_intake')
         .insert({ user_id: userId, date: todayStr(), litres: newLitres });
@@ -110,7 +102,7 @@ export function useWater(userId: string | null) {
     weeklyData,
     addWater,
     goal: GOAL_L,
-    step: STEP_L,
+    step: 0.25,
     pct: Math.min((litres / GOAL_L) * 100, 100),
     loading,
   };
