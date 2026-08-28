@@ -13,6 +13,7 @@ export function useWater(userId: string | null) {
   const [litres, setLitres] = useState(0);
   const [weeklyData, setWeeklyData] = useState<WaterDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -23,23 +24,21 @@ export function useWater(userId: string | null) {
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const loadToday = async () => {
-    // Get latest row for today, clean duplicates
-    const { data, error } = await supabase
+    const { data, error: loadErr } = await supabase
       .from('water_intake')
       .select('id, litres')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .eq('date', todayStr())
-      .order('id', { ascending: false });
+      .order('id', { ascending: false })
+      .limit(1);
 
-    if (error && import.meta.env.DEV) console.error('Water load error:', error);
+    if (loadErr) {
+      console.error('Water load error:', loadErr);
+      setError('Failed to load water data');
+    }
 
     if (data && data.length > 0) {
       setLitres(data[0].litres ?? 0);
-      // Delete duplicate rows silently
-      if (data.length > 1) {
-        const ids = data.slice(1).map((r: { id: number }) => r.id);
-        await supabase.from('water_intake').delete().in('id', ids);
-      }
     } else {
       setLitres(0);
     }
@@ -47,30 +46,53 @@ export function useWater(userId: string | null) {
   };
 
   const addWater = useCallback(async (amount: number) => {
+    if (!userId) {
+      setError('Not logged in');
+      return;
+    }
+
     const newLitres = Math.max(0, Math.min(GOAL_L, litres + amount));
     setLitres(newLitres);
+    setError(null);
 
-    // Check if a row already exists for today
-    const { data: existing } = await supabase
+    const date = todayStr();
+
+    // Check if record exists
+    const { data: existing, error: selErr } = await supabase
       .from('water_intake')
       .select('id')
       .eq('user_id', userId)
-      .eq('date', todayStr())
-      .order('id', { ascending: false })
+      .eq('date', date)
       .limit(1)
       .maybeSingle();
 
+    if (selErr) {
+      console.error('Water select error:', selErr);
+      setError('Failed to check existing water data');
+      return;
+    }
+
     if (existing?.id) {
-      // Update the single row
-      await supabase
+      // UPDATE existing row
+      const { error: updErr } = await supabase
         .from('water_intake')
         .update({ litres: newLitres, updated_at: new Date().toISOString() })
         .eq('id', existing.id);
+
+      if (updErr) {
+        console.error('Water update error:', updErr);
+        setError('Failed to save water: ' + updErr.message);
+      }
     } else {
-      // Insert first row for today
-      await supabase
+      // INSERT new row
+      const { error: insErr } = await supabase
         .from('water_intake')
-        .insert({ user_id: userId, date: todayStr(), litres: newLitres });
+        .insert({ user_id: userId, date, litres: newLitres });
+
+      if (insErr) {
+        console.error('Water insert error:', insErr);
+        setError('Failed to save water: ' + insErr.message);
+      }
     }
   }, [userId, litres]);
 
@@ -105,5 +127,6 @@ export function useWater(userId: string | null) {
     step: 0.25,
     pct: Math.min((litres / GOAL_L) * 100, 100),
     loading,
+    error,
   };
 }
