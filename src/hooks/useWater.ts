@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
 const STEP_L = 1;
@@ -14,7 +14,6 @@ export function useWater(userId: string | null) {
   const [litres, setLitres] = useState(0);
   const [weeklyData, setWeeklyData] = useState<WaterDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const savingRef = useRef(false);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -25,39 +24,43 @@ export function useWater(userId: string | null) {
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const loadToday = async () => {
-    if (savingRef.current) return; // skip reload while saving
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('water_intake')
-      .select('*')
+      .select('id, litres')
       .eq('user_id', userId)
       .eq('date', todayStr())
       .maybeSingle();
 
-    // Support both 'glasses' and 'litres' column names
-    setLitres(data?.glasses ?? data?.litres ?? 0);
+    if (error && import.meta.env.DEV) console.error('Water load error:', error);
+    setLitres(data?.litres ?? 0);
     setLoading(false);
   };
 
   const addWater = useCallback(async (amount: number) => {
-    setLitres((prev) => {
-      const next = Math.max(0, Math.min(GOAL_L, prev + amount));
+    const newLitres = Math.max(0, Math.min(GOAL_L, litres + amount));
+    setLitres(newLitres);
 
-      // Save to DB without blocking UI
-      savingRef.current = true;
-      supabase
+    // Check if record exists for today
+    const { data: existing } = await supabase
+      .from('water_intake')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('date', todayStr())
+      .maybeSingle();
+
+    if (existing?.id) {
+      // Update existing
+      await supabase
         .from('water_intake')
-        .upsert(
-          { user_id: userId, date: todayStr(), litres: next, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id,date' }
-        )
-        .then(({ error }) => {
-          savingRef.current = false;
-          if (error && import.meta.env.DEV) console.error('Water sync failed:', error);
-        });
-
-      return next;
-    });
-  }, [userId]);
+        .update({ litres: newLitres, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    } else {
+      // Insert new
+      await supabase
+        .from('water_intake')
+        .insert({ user_id: userId, date: todayStr(), litres: newLitres });
+    }
+  }, [userId, litres]);
 
   const loadWeeklyData = async () => {
     const days: WaterDay[] = [];
@@ -67,13 +70,13 @@ export function useWater(userId: string | null) {
       const dateStr = d.toISOString().slice(0, 10);
       const { data } = await supabase
         .from('water_intake')
-        .select('*')
+        .select('litres')
         .eq('user_id', userId)
         .eq('date', dateStr)
         .maybeSingle();
       days.push({
         date: dateStr,
-        litres: data?.litres ?? data?.glasses ?? 0,
+        litres: data?.litres ?? 0,
         label: d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }),
       });
     }

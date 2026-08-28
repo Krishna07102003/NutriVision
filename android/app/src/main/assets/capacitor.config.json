@@ -1,0 +1,11 @@
+{
+	"appId": "com.nutrivision.app",
+	"appName": "NutriVision",
+	"webDir": "dist",
+	"android": {
+		"webContentsDebuggingEnabled": true
+	},
+	"server": {
+		"androidScheme": "https"
+	}
+}
