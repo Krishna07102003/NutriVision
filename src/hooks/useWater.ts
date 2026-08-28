@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 
-const GOAL_L = 5;
+// Goal: 5 litres = 5000 ml (stored as integer in DB)
+const GOAL_ML = 5000;
 
 export interface WaterDay {
   date: string;
@@ -10,7 +11,7 @@ export interface WaterDay {
 }
 
 export function useWater(userId: string | null) {
-  const [litres, setLitres] = useState(0);
+  const [litres, setLitres] = useState(0); // always in litres for display
   const [weeklyData, setWeeklyData] = useState<WaterDay[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +24,6 @@ export function useWater(userId: string | null) {
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const loadToday = async () => {
-    // Use select('*') — no order/limit/select with column names that may not exist
     const { data, error } = await supabase
       .from('water_intake')
       .select('*')
@@ -32,28 +32,30 @@ export function useWater(userId: string | null) {
       .maybeSingle();
 
     if (error && import.meta.env.DEV) console.error('Water load error:', error);
-    setLitres(data?.litres ?? 0);
+    // DB stores ml as integer, convert to litres for display
+    const ml = data?.litres ?? 0;
+    setLitres(ml / 1000);
     setLoading(false);
   };
 
   const addWater = useCallback(async (amount: number) => {
     if (!userId) return;
 
-    const newLitres = Math.max(0, Math.min(GOAL_L, litres + amount));
+    // amount is in litres (0.25, 0.5, 1.0)
+    // Convert to ml for integer storage
+    const newLitres = Math.max(0, Math.min(GOAL_ML / 1000, litres + amount));
     setLitres(newLitres);
 
-    // Simple upsert — if the table has a unique constraint on (user_id, date) this works
-    // If not, it may create duplicates — loadToday will pick the latest
+    const ml = Math.round(newLitres * 1000); // store as integer millilitres
+
     const { error } = await supabase
       .from('water_intake')
       .upsert(
-        { user_id: userId, date: todayStr(), litres: newLitres, updated_at: new Date().toISOString() },
+        { user_id: userId, date: todayStr(), litres: ml, updated_at: new Date().toISOString() },
         { onConflict: 'user_id,date' }
       );
 
-    if (error) {
-      console.error('Water save failed:', error);
-    }
+    if (error) console.error('Water save failed:', error);
   }, [userId, litres]);
 
   const loadWeeklyData = async () => {
@@ -70,7 +72,7 @@ export function useWater(userId: string | null) {
         .maybeSingle();
       days.push({
         date: dateStr,
-        litres: data?.litres ?? 0,
+        litres: (data?.litres ?? 0) / 1000,
         label: d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }),
       });
     }
@@ -81,9 +83,9 @@ export function useWater(userId: string | null) {
     litres,
     weeklyData,
     addWater,
-    goal: GOAL_L,
+    goal: GOAL_ML / 1000, // 5 litres
     step: 0.25,
-    pct: Math.min((litres / GOAL_L) * 100, 100),
+    pct: Math.min((litres / (GOAL_ML / 1000)) * 100, 100),
     loading,
   };
 }
