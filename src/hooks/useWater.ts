@@ -24,15 +24,29 @@ export function useWater(userId: string | null) {
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const loadToday = async () => {
+    // Get ALL rows for today (there may be duplicates from old broken upsert)
     const { data, error } = await supabase
       .from('water_intake')
       .select('id, litres')
       .eq('user_id', userId)
       .eq('date', todayStr())
-      .maybeSingle();
+      .order('id', { ascending: false });
 
     if (error && import.meta.env.DEV) console.error('Water load error:', error);
-    setLitres(data?.litres ?? 0);
+
+    if (data && data.length > 0) {
+      // Keep only the latest row, delete duplicates
+      const latest = data[0];
+      setLitres(latest.litres ?? 0);
+
+      // Clean up duplicate rows (keep latest, delete rest)
+      if (data.length > 1) {
+        const idsToDelete = data.slice(1).map((r: { id: number }) => r.id);
+        await supabase.from('water_intake').delete().in('id', idsToDelete);
+      }
+    } else {
+      setLitres(0);
+    }
     setLoading(false);
   };
 
@@ -40,20 +54,26 @@ export function useWater(userId: string | null) {
     const newLitres = Math.max(0, Math.min(GOAL_L, litres + amount));
     setLitres(newLitres);
 
-    // Check if record exists for today
+    // Get all rows for today
     const { data: existing } = await supabase
       .from('water_intake')
       .select('id')
       .eq('user_id', userId)
       .eq('date', todayStr())
-      .maybeSingle();
+      .order('id', { ascending: false });
 
-    if (existing?.id) {
-      // Update existing
+    if (existing && existing.length > 0) {
+      // Update the latest row
       await supabase
         .from('water_intake')
         .update({ litres: newLitres, updated_at: new Date().toISOString() })
-        .eq('id', existing.id);
+        .eq('id', existing[0].id);
+
+      // Delete any duplicates
+      if (existing.length > 1) {
+        const idsToDelete = existing.slice(1).map((r: { id: number }) => r.id);
+        await supabase.from('water_intake').delete().in('id', idsToDelete);
+      }
     } else {
       // Insert new
       await supabase
@@ -73,6 +93,8 @@ export function useWater(userId: string | null) {
         .select('litres')
         .eq('user_id', userId)
         .eq('date', dateStr)
+        .order('id', { ascending: false })
+        .limit(1)
         .maybeSingle();
       days.push({
         date: dateStr,
