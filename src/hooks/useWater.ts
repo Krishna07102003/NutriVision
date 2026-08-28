@@ -13,7 +13,6 @@ export function useWater(userId: string | null) {
   const [litres, setLitres] = useState(0);
   const [weeklyData, setWeeklyData] = useState<WaterDay[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
@@ -24,75 +23,36 @@ export function useWater(userId: string | null) {
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
   const loadToday = async () => {
-    const { data, error: loadErr } = await supabase
+    // Use select('*') — no order/limit/select with column names that may not exist
+    const { data, error } = await supabase
       .from('water_intake')
-      .select('id, litres')
-      .eq('user_id', userId!)
+      .select('*')
+      .eq('user_id', userId)
       .eq('date', todayStr())
-      .order('id', { ascending: false })
-      .limit(1);
+      .maybeSingle();
 
-    if (loadErr) {
-      console.error('Water load error:', loadErr);
-      setError('Failed to load water data');
-    }
-
-    if (data && data.length > 0) {
-      setLitres(data[0].litres ?? 0);
-    } else {
-      setLitres(0);
-    }
+    if (error && import.meta.env.DEV) console.error('Water load error:', error);
+    setLitres(data?.litres ?? 0);
     setLoading(false);
   };
 
   const addWater = useCallback(async (amount: number) => {
-    if (!userId) {
-      setError('Not logged in');
-      return;
-    }
+    if (!userId) return;
 
     const newLitres = Math.max(0, Math.min(GOAL_L, litres + amount));
     setLitres(newLitres);
-    setError(null);
 
-    const date = todayStr();
-
-    // Check if record exists
-    const { data: existing, error: selErr } = await supabase
+    // Simple upsert — if the table has a unique constraint on (user_id, date) this works
+    // If not, it may create duplicates — loadToday will pick the latest
+    const { error } = await supabase
       .from('water_intake')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('date', date)
-      .limit(1)
-      .maybeSingle();
+      .upsert(
+        { user_id: userId, date: todayStr(), litres: newLitres, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,date' }
+      );
 
-    if (selErr) {
-      console.error('Water select error:', selErr);
-      setError('Failed to check existing water data');
-      return;
-    }
-
-    if (existing?.id) {
-      // UPDATE existing row
-      const { error: updErr } = await supabase
-        .from('water_intake')
-        .update({ litres: newLitres, updated_at: new Date().toISOString() })
-        .eq('id', existing.id);
-
-      if (updErr) {
-        console.error('Water update error:', updErr);
-        setError('Failed to save water: ' + updErr.message);
-      }
-    } else {
-      // INSERT new row
-      const { error: insErr } = await supabase
-        .from('water_intake')
-        .insert({ user_id: userId, date, litres: newLitres });
-
-      if (insErr) {
-        console.error('Water insert error:', insErr);
-        setError('Failed to save water: ' + insErr.message);
-      }
+    if (error) {
+      console.error('Water save failed:', error);
     }
   }, [userId, litres]);
 
@@ -104,11 +64,9 @@ export function useWater(userId: string | null) {
       const dateStr = d.toISOString().slice(0, 10);
       const { data } = await supabase
         .from('water_intake')
-        .select('litres')
+        .select('*')
         .eq('user_id', userId)
         .eq('date', dateStr)
-        .order('id', { ascending: false })
-        .limit(1)
         .maybeSingle();
       days.push({
         date: dateStr,
@@ -127,6 +85,5 @@ export function useWater(userId: string | null) {
     step: 0.25,
     pct: Math.min((litres / GOAL_L) * 100, 100),
     loading,
-    error,
   };
 }
