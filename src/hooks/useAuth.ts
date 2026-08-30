@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, capacitorStorage } from '../supabaseClient';
 import type { UserProfile, MacroGoals } from '../types';
 import { ACTIVITY_MULTIPLIERS } from '../types';
 
@@ -24,11 +24,25 @@ export function useAuth(): AuthState & {
   const sessionRestored = useRef(false);
 
   useEffect(() => {
-    // Step 1: Try to restore session from local storage (instant on web, Capacitor Preferences on native)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let cancelled = false;
+
+    async function initAuth() {
+      // On native apps, wait for Capacitor Preferences to load session tokens
+      // into the cache before trying to read the session
+      if (capacitorStorage?.waitForLoad) {
+        await capacitorStorage.waitForLoad();
+      }
+
+      if (cancelled) return;
+
+      // Now read the session (tokens should be in cache from Capacitor Preferences)
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (cancelled) return;
+
       if (session?.user) {
         if (session.user.is_anonymous || session.user.app_metadata?.provider === 'anonymous') {
-          supabase.auth.signOut();
+          await supabase.auth.signOut();
           sessionRestored.current = true;
           setAuthLoading(false);
           return;
@@ -37,13 +51,17 @@ export function useAuth(): AuthState & {
       }
       sessionRestored.current = true;
       setAuthLoading(false);
-    }).catch(() => {
-      sessionRestored.current = true;
-      setAuthLoading(false);
+    }
+
+    initAuth().catch(() => {
+      if (!cancelled) {
+        sessionRestored.current = true;
+        setAuthLoading(false);
+      }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Skip INITIAL_SESSION and SIGNED_OUT events until getSession() has resolved
+      // Skip events until getSession() has resolved (prevents race condition)
       if (!sessionRestored.current) return;
 
       if (session?.user?.is_anonymous) {
@@ -53,7 +71,11 @@ export function useAuth(): AuthState & {
       }
       setUserId(session?.user?.id ?? null);
     });
-    return () => listener.subscription.unsubscribe();
+
+    return () => {
+      cancelled = true;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
