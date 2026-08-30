@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import type { UserProfile, MacroGoals } from '../types';
 import { ACTIVITY_MULTIPLIERS } from '../types';
@@ -21,24 +21,31 @@ export function useAuth(): AuthState & {
   const [goals, setGoals] = useState<MacroGoals>({
     calories: 2000, protein: 150, carbs: 250, fat: 65, bmr: 0, tdee: 0,
   });
+  const sessionRestored = useRef(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data, error }) => {
-      if (error || !data?.user) {
-        setAuthLoading(false);
-        return;
+    // Step 1: Try to restore session from local storage (instant on web, Capacitor Preferences on native)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        if (session.user.is_anonymous || session.user.app_metadata?.provider === 'anonymous') {
+          supabase.auth.signOut();
+          sessionRestored.current = true;
+          setAuthLoading(false);
+          return;
+        }
+        setUserId(session.user.id);
       }
-      // Force anonymous users back to the new auth screen
-      if (data.user.app_metadata?.provider === 'anonymous' || data.user.is_anonymous) {
-        await supabase.auth.signOut();
-        setAuthLoading(false);
-        return;
-      }
-      setUserId(data.user.id);
+      sessionRestored.current = true;
+      setAuthLoading(false);
+    }).catch(() => {
+      sessionRestored.current = true;
       setAuthLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip INITIAL_SESSION and SIGNED_OUT events until getSession() has resolved
+      if (!sessionRestored.current) return;
+
       if (session?.user?.is_anonymous) {
         await supabase.auth.signOut();
         setUserId(null);

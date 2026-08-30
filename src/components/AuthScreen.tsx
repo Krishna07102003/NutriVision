@@ -28,7 +28,11 @@ export default function AuthScreen() {
     setError('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: (() => {
+    const w = window as any;
+    const isNative = w.Capacitor && typeof w.Capacitor.isNativePlatform === 'function' && w.Capacitor.isNativePlatform();
+    return isNative ? 'com.nutrivision.app://' : window.location.origin;
+  })() },
     });
     if (error) {
       setError(error.message);
