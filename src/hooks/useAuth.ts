@@ -25,6 +25,7 @@ export function useAuth(): AuthState & {
 
   useEffect(() => {
     let cancelled = false;
+    let appUrlOpenListener: any = null;
 
     async function initAuth() {
       // On native apps, wait for Capacitor Preferences to load session tokens
@@ -60,6 +61,40 @@ export function useAuth(): AuthState & {
       }
     });
 
+    // Listen for OAuth redirect on native apps
+    const w = window as any;
+    const isNative = w.Capacitor && typeof w.Capacitor.isNativePlatform === 'function' && w.Capacitor.isNativePlatform();
+    if (isNative) {
+      import('@capacitor/app').then(({ App }) => {
+        if (cancelled) return;
+        appUrlOpenListener = App.addListener('appUrlOpen', async ({ url }: { url: string }) => {
+          console.log('[Auth] appUrlOpen:', url);
+          // Extract tokens from URL fragment
+          const hash = url.includes('#') ? url.split('#')[1] : '';
+          const params = new URLSearchParams(hash);
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          if (accessToken && refreshToken) {
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (!error) {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user) {
+                setUserId(session.user.id);
+              }
+            }
+          }
+          // Close the browser if it's still open
+          try {
+            const { Browser } = await import('@capacitor/browser');
+            await Browser.close();
+          } catch {}
+        });
+      }).catch(() => {});
+    }
+
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       // Skip events until getSession() has resolved (prevents race condition)
       if (!sessionRestored.current) return;
@@ -75,6 +110,7 @@ export function useAuth(): AuthState & {
     return () => {
       cancelled = true;
       listener.subscription.unsubscribe();
+      appUrlOpenListener?.remove();
     };
   }, []);
 

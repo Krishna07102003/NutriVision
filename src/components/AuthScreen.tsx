@@ -26,17 +26,44 @@ export default function AuthScreen() {
     }
     setLoading(true);
     setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: (() => {
+
     const w = window as any;
     const isNative = w.Capacitor && typeof w.Capacitor.isNativePlatform === 'function' && w.Capacitor.isNativePlatform();
-    return isNative ? 'com.nutrivision.app://' : window.location.origin;
-  })() },
-    });
-    if (error) {
-      setError(error.message);
+
+    if (isNative) {
+      // Native app: open OAuth URL in system browser, listen for redirect
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'com.nutrivision.app://',
+          skipBrowserRedirect: true,
+        },
+      });
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+        return;
+      }
+      // Open the OAuth URL in the system browser
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: data?.url || '' });
+      } catch (e) {
+        console.error('Failed to open browser:', e);
+        // Fallback: try window.open
+        window.open(data?.url || '', '_system');
+      }
       setLoading(false);
+    } else {
+      // Web: standard OAuth flow
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+      }
     }
   };
 
