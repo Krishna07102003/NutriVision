@@ -72,7 +72,7 @@ export default function PricingPage({ subscription }: PricingPageProps) {
         </div>
       )}
 
-      {!subscription.isPro && (
+      {(!subscription.isPro || subscription.isTrialActive) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => setSelectedPlan('monthly')}
@@ -129,7 +129,7 @@ export default function PricingPage({ subscription }: PricingPageProps) {
         </ul>
       </div>
 
-      {!subscription.isPro && (
+      {(!subscription.isPro || subscription.isTrialActive) && (
         <button
           onClick={handleSubscribe}
           disabled={subscription.loading}
