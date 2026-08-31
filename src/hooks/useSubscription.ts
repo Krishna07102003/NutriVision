@@ -20,6 +20,7 @@ export interface SubscriptionState {
   isTrialActive: boolean;
   trialDaysLeft: number;
   loading: boolean;
+  error: string;
   subscribe: (plan: 'monthly' | 'yearly') => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -30,6 +31,7 @@ export function useSubscription(userId: string | null): SubscriptionState {
   const [isTrialActive, setIsTrialActive] = useState(false);
   const [trialDaysLeft, setTrialDaysLeft] = useState(7);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const checkSubscription = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -65,13 +67,12 @@ export function useSubscription(userId: string | null): SubscriptionState {
         const days = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         setIsTrialActive(true);
         setTrialDaysLeft(days);
-        setIsPro(true); // Trial users get pro features
+        setIsPro(true);
         setLoading(false);
         return;
       }
     }
 
-    // No subscription, no active trial
     setSubscription(null);
     setIsPro(false);
     setIsTrialActive(false);
@@ -85,14 +86,13 @@ export function useSubscription(userId: string | null): SubscriptionState {
 
   const subscribe = async (plan: 'monthly' | 'yearly') => {
     if (!userId) return;
-
+    setError('');
     setLoading(true);
-    try {
-      // Load Razorpay script
-      const loaded = await loadRazorpayScript();
-      if (!loaded) throw new Error('Failed to load payment gateway');
 
-      // Get user info
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) throw new Error('Failed to load payment gateway. Check your internet connection.');
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -100,10 +100,14 @@ export function useSubscription(userId: string | null): SubscriptionState {
       const userEmail = user.email || '';
 
       await createSubscriptionOrder(plan, userId, userEmail, userName);
-      // After payment handler runs, refresh subscription
+      // Refresh subscription after payment
       setTimeout(() => checkSubscription(), 2000);
-    } catch (err) {
-      console.error('Subscribe error:', err);
+    } catch (err: any) {
+      const message = err?.message || 'Payment failed. Please try again.';
+      if (message !== 'Payment cancelled') {
+        setError(message);
+        console.error('Subscribe error:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -115,6 +119,7 @@ export function useSubscription(userId: string | null): SubscriptionState {
     isTrialActive,
     trialDaysLeft,
     loading,
+    error,
     subscribe,
     refresh: checkSubscription,
   };

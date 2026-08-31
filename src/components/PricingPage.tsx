@@ -18,16 +18,10 @@ const PRO_FEATURES = [
 
 export default function PricingPage({ subscription }: PricingPageProps) {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
-  const [paying, setPaying] = useState(false);
   const navigate = useNavigate();
 
   const handleSubscribe = async () => {
-    setPaying(true);
-    try {
-      await subscription.subscribe(selectedPlan);
-    } finally {
-      setPaying(false);
-    }
+    await subscription.subscribe(selectedPlan);
   };
 
   const savings = Math.round(((99 * 12 - 799) / (99 * 12)) * 100);
@@ -47,6 +41,13 @@ export default function PricingPage({ subscription }: PricingPageProps) {
           Unlock the full power of NutriVision with AI-powered insights, unlimited coaching, and advanced analytics.
         </p>
       </div>
+
+      {/* Error message */}
+      {subscription.error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-center">
+          <p className="text-sm text-red-400">{subscription.error}</p>
+        </div>
+      )}
 
       {subscription.isTrialActive && (
         <div className="bg-accent/10 border border-accent/20 rounded-xl p-4 text-center">
@@ -131,10 +132,10 @@ export default function PricingPage({ subscription }: PricingPageProps) {
       {!subscription.isPro && (
         <button
           onClick={handleSubscribe}
-          disabled={paying}
+          disabled={subscription.loading}
           className="w-full py-4 rounded-xl bg-accent text-white font-bold text-sm hover:bg-accent-dim transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {paying ? (
+          {subscription.loading ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Processing...
