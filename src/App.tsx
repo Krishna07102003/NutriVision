@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Routes, Route, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, BarChart3, MessageSquare, Calendar, User, Trash2, Menu, X, MessageSquareWarning, LogOut } from 'lucide-react';
+import { Home, BarChart3, MessageSquare, Calendar, User, Trash2, Menu, X, MessageSquareWarning, LogOut, Crown } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './hooks/useAuth';
 import { useNutrition } from './hooks/useNutrition';
@@ -31,6 +31,9 @@ import ConfirmSheet from './components/ConfirmSheet';
 import UndoToast from './components/UndoToast';
 import PWAInstall from './components/PWAInstall';
 import FeedbackForm from './components/FeedbackForm';
+import PricingPage from './components/PricingPage';
+import ProGate from './components/ProGate';
+import { useSubscription } from './hooks/useSubscription';
 import LoadingScreen from './components/LoadingScreen';
 
 const INITIAL_FORM: OnboardingFormData = {
@@ -56,6 +59,7 @@ function AppContent() {
   const favorites = useFavorites(auth.userId);
   const recipes = useRecipes(auth.userId, nutrition.addManualEntry);
   const water = useWater(auth.userId);
+  const subscription = useSubscription(auth.userId);
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -239,6 +243,21 @@ function AppContent() {
             </div>
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline"><ExportButton entries={nutrition.entries} weightEntries={weight.entries} userName={auth.userProfile.name} /></span>
+              {!subscription.isPro && !subscription.isTrialActive && (
+                <Link to="/pricing" className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-bold">
+                  <Crown className="w-3.5 h-3.5" /> Upgrade
+                </Link>
+              )}
+              {subscription.isTrialActive && (
+                <Link to="/pricing" className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors">
+                  <Crown className="w-3.5 h-3.5" /> {subscription.trialDaysLeft}d left
+                </Link>
+              )}
+              {subscription.isPro && !subscription.isTrialActive && (
+                <span className="flex items-center gap-1 text-xs text-emerald-400">
+                  <Crown className="w-3.5 h-3.5" /> Pro
+                </span>
+              )}
               <LanguageToggle />
               <ThemeToggle />
               <button
@@ -389,6 +408,7 @@ function AppContent() {
                 )}
               </div>
             } />
+            <Route path="/pricing" element={<PricingPage subscription={subscription} />} />
             <Route path="/chat" element={
               <ChatPage
                 chatHistory={coach.chatHistory}
