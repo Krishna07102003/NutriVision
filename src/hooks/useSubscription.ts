@@ -23,7 +23,7 @@ export interface SubscriptionState {
   trialDaysLeft: number;
   loading: boolean;
   error: string;
-  subscribe: (plan: PlanName) => Promise<{ success: boolean; cancelled?: boolean }>;
+  subscribe: (plan: PlanName, autoPay?: boolean) => Promise<{ success: boolean; cancelled?: boolean }>;
   cancel: () => Promise<{ success: boolean }>;
   refresh: () => Promise<void>;
 }
@@ -87,7 +87,7 @@ export function useSubscription(userId: string | null): SubscriptionState {
     checkSubscription();
   }, [checkSubscription]);
 
-  const subscribe = async (plan: PlanName) => {
+  const subscribe = async (plan: PlanName, autoPay = true) => {
     if (!userId) return { success: false };
     setError('');
     setLoading(true);
@@ -102,7 +102,7 @@ export function useSubscription(userId: string | null): SubscriptionState {
       const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
       const userEmail = user.email || '';
 
-      const result = await createSubscriptionOrder(plan, userEmail, userName);
+      const result = await createSubscriptionOrder(plan, userEmail, userName, autoPay);
       await checkSubscription();
       return result;
     } catch (err: any) {

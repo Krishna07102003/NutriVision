@@ -43,7 +43,83 @@ serve(async (req) => {
     const body = JSON.parse(rawBody);
     const event = body.event;
 
-    // Only these events mean real money was received
+    // --- Auto-renewal: a recurring charge succeeded → extend Pro ---
+    if (event === "subscription.charged") {
+      const subId = body.payload?.subscription?.entity?.id;
+      if (!subId) throw new Error("Missing subscription id in webhook");
+      const paymentId = body.payload?.payment?.entity?.id || null;
+
+      const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
+      const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+      if (!razorpayKeyId || !razorpayKeySecret) throw new Error("Razorpay keys not configured");
+      const auth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
+
+      const subRes = await fetch(`https://api.razorpay.com/v1/subscriptions/${subId}`, {
+        headers: { "Authorization": `Basic ${auth}` },
+      });
+      if (!subRes.ok) throw new Error("Could not verify subscription");
+      const sub = await subRes.json();
+
+      const userId = sub.notes?.user_id;
+      const plan = sub.notes?.plan;
+      const amount = PLAN_AMOUNTS[plan];
+      if (!userId) throw new Error("Subscription has no user id");
+      if (!amount) throw new Error("Subscription has no valid plan");
+      if (sub.status !== "active") throw new Error("Subscription is not active");
+
+      const currentEnd = sub.current_end
+        ? new Date(sub.current_end * 1000).toISOString()
+        : new Date(Date.now() + (plan === "monthly" ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString();
+
+      const { error: upsertError } = await supabase.from("subscriptions").upsert({
+        user_id: userId,
+        plan,
+        status: "active",
+        razorpay_subscription_id: subId,
+        razorpay_payment_id: paymentId,
+        amount,
+        start_date: new Date().toISOString(),
+        end_date: currentEnd,
+      }, { onConflict: "user_id" });
+      if (upsertError) throw new Error("Could not renew subscription");
+
+      await supabase.from("user_profiles").update({ is_pro: true }).eq("id", userId);
+      return new Response(JSON.stringify({ received: true, renewed: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Subscription cancelled (refund flow or Razorpay-side) → revoke ---
+    if (event === "subscription.cancelled") {
+      const subId = body.payload?.subscription?.entity?.id;
+      if (subId) {
+        const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
+        const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+        if (razorpayKeyId && razorpayKeySecret) {
+          const auth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
+          try {
+            const subRes = await fetch(`https://api.razorpay.com/v1/subscriptions/${subId}`, {
+              headers: { "Authorization": `Basic ${auth}` },
+            });
+            if (subRes.ok) {
+              const sub = await subRes.json();
+              const userId = sub.notes?.user_id;
+              if (userId) {
+                await supabase.from("subscriptions").update({ status: "cancelled" }).eq("user_id", userId);
+                await supabase.from("user_profiles").update({ is_pro: false }).eq("id", userId);
+              }
+            }
+          } catch { /* best effort */ }
+        }
+      }
+      return new Response(JSON.stringify({ received: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // One-time payments only: payment.captured / order.paid
     if (event !== "payment.captured" && event !== "order.paid") {
       return new Response(JSON.stringify({ received: true }), {
         status: 200,

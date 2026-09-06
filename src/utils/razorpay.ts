@@ -27,60 +27,48 @@ export function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-// Create order via Supabase Edge Function (server-side, price decided on the server)
-async function createRazorpayOrder(plan: PlanName): Promise<{ order_id: string; amount: number; key_id: string }> {
+interface Session {
+  order_id?: string;
+  subscription_id?: string;
+  amount: number;
+  key_id: string;
+}
+
+// Create the checkout session server-side.
+// autoPay = true  → Razorpay subscription (mandate, renews automatically)
+// autoPay = false → one-time order (single charge, no renewal)
+async function createCheckoutSession(plan: PlanName, autoPay: boolean): Promise<Session> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase.functions.invoke('create-order', {
-    body: { plan },
-  });
+  const fnName = autoPay ? 'create-subscription' : 'create-order';
+  const { data, error } = await supabase.functions.invoke(fnName, { body: { plan } });
+  if (error) throw new Error(error.message || `Failed to start payment (${fnName})`);
+  if (!data?.key_id) throw new Error('No Razorpay key returned');
 
-  if (error) throw new Error(error.message || 'Failed to create order');
-  if (!data?.order_id) throw new Error('No order ID returned');
-  return data as { order_id: string; amount: number; key_id: string };
+  return data as Session;
 }
 
-// Open Razorpay checkout with server-created order
+// Open Razorpay checkout and verify the payment server-side before trusting it
 export async function createSubscriptionOrder(
   plan: PlanName,
   userEmail: string,
   userName: string,
+  autoPay = true,
 ): Promise<{ success: boolean; endDate?: string }> {
-  // Create order server-side first; the server returns the public Razorpay key
-  const { order_id: orderId, amount, key_id: serverKeyId } = await createRazorpayOrder(plan);
-  const razorpayKey = serverKeyId || RAZORPAY_KEY_ID;
+  // Create the session server-side first; the server returns the public Razorpay key
+  const session = await createCheckoutSession(plan, autoPay);
+  const razorpayKey = session.key_id || RAZORPAY_KEY_ID;
   if (!razorpayKey) {
     throw new Error('Razorpay is not configured on this deployment yet. Please try again in a few minutes.');
   }
 
   return new Promise((resolve, reject) => {
-    const options = {
+    const options: any = {
       key: razorpayKey,
-      amount,
-      currency: 'INR',
       name: 'NutriVision',
       description: plan === 'monthly' ? 'Monthly Pro Plan — ₹99/month' : 'Yearly Pro Plan — ₹799/year',
       image: '/icon-192.png',
-      order_id: orderId,
-      handler: async function (response: any) {
-        // Payment successful — verify server-side before trusting it
-        const { data, error } = await supabase.functions.invoke('verify-payment', {
-          body: {
-            plan,
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-          },
-        });
-
-        if (error) {
-          console.error('Verify payment error:', error);
-          reject(new Error('Payment was successful but we could not confirm it yet. Your payment is safe — contact support with your payment ID.'));
-          return;
-        }
-        resolve({ success: true, endDate: data?.end_date });
-      },
       prefill: {
         name: userName,
         email: userEmail,
@@ -88,12 +76,47 @@ export async function createSubscriptionOrder(
       theme: {
         color: '#38BDF8',
       },
+      handler: async function (response: any) {
+        try {
+          const body: any = {
+            plan,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          };
+          if (response.razorpay_subscription_id) {
+            body.razorpay_subscription_id = response.razorpay_subscription_id;
+          } else if (response.razorpay_order_id) {
+            body.razorpay_order_id = response.razorpay_order_id;
+          } else {
+            throw new Error('Payment response missing order/subscription id');
+          }
+
+          const { data, error } = await supabase.functions.invoke('verify-payment', { body });
+          if (error) {
+            console.error('Verify payment error:', error);
+            reject(new Error('Payment was successful but we could not confirm it yet. Your payment is safe — contact support with your payment ID.'));
+            return;
+          }
+          resolve({ success: true, endDate: data?.end_date });
+        } catch (err: any) {
+          reject(err);
+        }
+      },
       modal: {
         ondismiss: function () {
           reject(new Error('Payment cancelled'));
         },
       },
     };
+
+    // auto-pay (subscription) vs one-time (order)
+    if (session.subscription_id) {
+      options.subscription_id = session.subscription_id;
+    } else {
+      options.order_id = session.order_id;
+      options.amount = session.amount;
+      options.currency = 'INR';
+    }
 
     const razorpay = new window.Razorpay(options);
     razorpay.on('payment.failed', function (response: any) {

@@ -19,13 +19,14 @@ const PRO_FEATURES = [
 
 export default function PricingPage({ subscription }: PricingPageProps) {
   const [selectedPlan, setSelectedPlan] = useState<PlanName>('yearly');
+  const [autoPay, setAutoPay] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const navigate = useNavigate();
 
   const handleSubscribe = async () => {
-    const result = await subscription.subscribe(selectedPlan);
+    const result = await subscription.subscribe(selectedPlan, autoPay);
     if (result.success) setShowSuccess(true);
   };
 
@@ -41,6 +42,8 @@ export default function PricingPage({ subscription }: PricingPageProps) {
 
   const savings = Math.round(((99 * 12 - 799) / (99 * 12)) * 100);
   const sub = subscription.subscription;
+  const cancelWindowOpen =
+    !!sub && !subscription.isTrialActive && Date.now() - new Date(sub.start_date).getTime() <= 24 * 60 * 60 * 1000;
 
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-6 animate-page-in">
@@ -102,18 +105,25 @@ export default function PricingPage({ subscription }: PricingPageProps) {
             </div>
           </div>
 
-          {!confirmCancel ? (
+          {!cancelWindowOpen && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+              <p className="text-xs text-[var(--text-muted)]">
+                Cancellation and refunds are available within the first <b>24 hours</b> of purchase only. This purchase is more than 24 hours old, so it can no longer be cancelled from the app. Contact support for help.
+              </p>
+            </div>
+          )}
+          {cancelWindowOpen && !confirmCancel ? (
             <button
               onClick={() => setConfirmCancel(true)}
               disabled={subscription.loading}
               className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/10 transition-colors disabled:opacity-50"
             >
-              Cancel subscription
+              Cancel subscription (full refund within 24h)
             </button>
           ) : (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
               <p className="text-sm text-[var(--text-primary)] font-semibold mb-3">
-                Are you sure you want to cancel? You'll keep Pro until {new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.
+                Cancel now and get a full refund of ₹{((sub?.amount || 0) / 100).toFixed(0)}? Pro will be removed immediately. This cannot be undone.
               </p>
               <div className="flex gap-2">
                 <button
@@ -201,23 +211,41 @@ export default function PricingPage({ subscription }: PricingPageProps) {
       </div>
 
       {(!subscription.isPro || subscription.isTrialActive) && (
-        <button
-          onClick={handleSubscribe}
-          disabled={subscription.loading}
-          className="w-full py-4 rounded-xl bg-accent text-white font-bold text-sm hover:bg-accent-dim transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {subscription.loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <Crown className="w-4 h-4" />
-              Subscribe — ₹{selectedPlan === 'monthly' ? '99/month' : '799/year'}
-            </>
-          )}
-        </button>
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 border border-[var(--border-color)] rounded-xl p-4 bg-[var(--bg-card)]/50 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoPay}
+              onChange={(e) => setAutoPay(e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-[#38BDF8] cursor-pointer flex-shrink-0"
+            />
+            <span>
+              <span className="block text-sm font-bold text-[var(--text-primary)]">
+                Enable auto-payment (recommended)
+              </span>
+              <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                Your subscription renews automatically every {selectedPlan === 'monthly' ? 'month' : 'year'} so Pro never lapses. You can cancel within the first 24 hours of each charge for a full refund.
+              </span>
+            </span>
+          </label>
+          <button
+            onClick={handleSubscribe}
+            disabled={subscription.loading}
+            className="w-full py-4 rounded-xl bg-accent text-white font-bold text-sm hover:bg-accent-dim transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {subscription.loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Crown className="w-4 h-4" />
+                Subscribe — ₹{selectedPlan === 'monthly' ? '99/month' : '799/year'}
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       <p className="text-[10px] text-[var(--text-muted)] text-center flex items-center justify-center gap-1">
@@ -241,7 +269,9 @@ export default function PricingPage({ subscription }: PricingPageProps) {
             {sub && (
               <p className="text-xs text-[var(--text-muted)] mb-5">
                 <Calendar className="w-3 h-3 inline mr-1" />
-                Pro active until {new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {sub.razorpay_subscription_id
+                  ? `Auto-payment enabled — renews on ${new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                  : `Pro active until ${new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
               </p>
             )}
             <button
