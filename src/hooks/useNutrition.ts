@@ -46,7 +46,7 @@ interface UseNutritionReturn {
 }
 
 
-export function useNutrition(userId: string | null, goals: MacroGoals): UseNutritionReturn {
+export function useNutrition(userId: string | null, goals: MacroGoals, isPro = false): UseNutritionReturn {
   const [entries, setEntries] = useState<NutritionEntry[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [uploadStage, setUploadStage] = useState<'uploading' | 'analyzing' | null>(null);
@@ -344,7 +344,8 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  const MAX_PHOTO_UPLOADS_PER_DAY = 4;
+  // Free users: 3 photo uploads/day. Pro users: 4 photo uploads/day.
+  const MAX_PHOTO_UPLOADS_PER_DAY = isPro ? 4 : 3;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, mealType?: string) => {
     const file = e.target.files?.[0];

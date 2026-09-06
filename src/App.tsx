@@ -51,14 +51,14 @@ const NAV_ITEMS = [
 
 function AppContent() {
   const auth = useAuth();
-  const nutrition = useNutrition(auth.userId, auth.goals);
+  const subscription = useSubscription(auth.userId);
+  const nutrition = useNutrition(auth.userId, auth.goals, subscription.isPro);
   const coach = useCoach(auth.userId, auth.userProfile, auth.goals, nutrition.totals, nutrition.todayEntries);
   const weight = useWeight(auth.userId);
   const exercise = useExercise(auth.userId);
   const favorites = useFavorites(auth.userId);
   const recipes = useRecipes(auth.userId, nutrition.addManualEntry);
   const water = useWater(auth.userId);
-  const subscription = useSubscription(auth.userId);
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
