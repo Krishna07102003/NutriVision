@@ -130,7 +130,14 @@ serve(async (req) => {
     const paymentEntity = body.payload?.payment?.entity;
     const orderEntity = body.payload?.order?.entity;
     const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id;
-    if (!razorpayOrderId) throw new Error("Missing order id in webhook");
+    if (!razorpayOrderId) {
+      // Subscription charges also emit payment.captured but carry no order id;
+      // those are handled by subscription.charged, so acknowledge to stop retries.
+      return new Response(JSON.stringify({ received: true, skipped: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // 2. Fetch the order from Razorpay (authoritative) to read user + plan + amount
     const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
