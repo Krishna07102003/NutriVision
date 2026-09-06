@@ -1,2 +1,7 @@
 [project]
 id = "durpnhvlmdmbwzuuanlw"
+
+# razorpay-webhook is called by Razorpay's servers (no Supabase auth header).
+# It authenticates requests itself via the Razorpay HMAC signature.
+[functions.razorpay-webhook]
+verify_jwt = false
