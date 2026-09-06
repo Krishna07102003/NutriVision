@@ -12,6 +12,11 @@ const PLANS = {
 } as const;
 type PlanName = keyof typeof PLANS;
 
+// Razorpay requires total_count >= 1 and rejects 0 ("infinite"). A high count
+// means the subscription auto-renews until the user cancels — 100 monthly
+// cycles ≈ 8+ years, 100 yearly cycles ≈ a century. Effectively lifetime.
+const TOTAL_CYCLES = 100;
+
 async function apiFetch(path: string, keyId: string, keySecret: string, init?: RequestInit) {
   const auth = btoa(`${keyId}:${keySecret}`);
   const res = await fetch(`https://api.razorpay.com${path}`, {
@@ -102,12 +107,12 @@ serve(async (req) => {
       planId = created.id;
     }
 
-    // 3. Create an infinite subscription (renews every cycle until cancelled)
+    // 3. Create an auto-renewing subscription (renews every cycle until cancelled)
     const subscription = await apiFetch("/v1/subscriptions", razorpayKeyId, razorpayKeySecret, {
       method: "POST",
       body: JSON.stringify({
         plan_id: planId,
-        total_count: 0,
+        total_count: TOTAL_CYCLES,
         customer_id: customerId,
         notes: { user_id: user.id, plan },
         quantity: 1,
