@@ -43,7 +43,15 @@ async function createCheckoutSession(plan: PlanName, autoPay: boolean): Promise<
 
   const fnName = autoPay ? 'create-subscription' : 'create-order';
   const { data, error } = await supabase.functions.invoke(fnName, { body: { plan } });
-  if (error) throw new Error(error.message || `Failed to start payment (${fnName})`);
+  if (error) {
+    // supabase-js hides the server's real message — dig it out of context
+    const realMessage = (error as any)?.context?.error
+      || (error as any)?.context?.message
+      || error.message
+      || `Failed to start payment (${fnName})`;
+    console.error(`[${fnName}] server error:`, realMessage, error);
+    throw new Error(typeof realMessage === 'string' ? realMessage : 'Payment could not be started. Please try again.');
+  }
   if (!data?.key_id) throw new Error('No Razorpay key returned');
 
   return data as Session;
