@@ -17,6 +17,20 @@ type PlanName = keyof typeof PLANS;
 // cycles ≈ 8+ years, 100 yearly cycles ≈ a century. Effectively lifetime.
 const TOTAL_CYCLES = 100;
 
+async function findCustomerByEmail(email: string | undefined, keyId: string, keySecret: string): Promise<string | null> {
+  if (!email) return null;
+  let skip = 0;
+  while (skip < 1000) {
+    const list = await apiFetch(`/v1/customers?count=100&skip=${skip}`, keyId, keySecret);
+    const items: any[] = list.items || [];
+    const found = items.find((c) => c.email?.toLowerCase() === email.toLowerCase());
+    if (found) return found.id;
+    if (items.length < 100) break;
+    skip += 100;
+  }
+  return null;
+}
+
 async function apiFetch(path: string, keyId: string, keySecret: string, init?: RequestInit) {
   const auth = btoa(`${keyId}:${keySecret}`);
   const res = await fetch(`https://api.razorpay.com${path}`, {
@@ -49,10 +63,12 @@ serve(async (req) => {
     );
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
+    console.log("create-subscription: authed", user.id);
 
     const { plan } = await req.json();
     const cfg = PLANS[plan];
     if (!cfg) throw new Error("Invalid plan");
+    console.log("create-subscription: plan", plan);
 
     const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
     const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
@@ -70,21 +86,36 @@ serve(async (req) => {
       try {
         const sub = await apiFetch(`/v1/subscriptions/${existing.razorpay_subscription_id}`, razorpayKeyId, razorpayKeySecret);
         if (sub.customer_id) customerId = sub.customer_id;
+        console.log("create-subscription: reused customer from existing sub", customerId);
       } catch {
-        // subscription no longer exists — create a new customer below
+        // subscription no longer exists — fall through to email lookup
       }
     }
 
+    // Reuse the existing customer for this email if one was created before
     if (!customerId) {
-      const customer = await apiFetch("/v1/customers", razorpayKeyId, razorpayKeySecret, {
-        method: "POST",
-        body: JSON.stringify({
-          name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-          email: user.email || undefined,
-          notes: { user_id: user.id },
-        }),
-      });
-      customerId = customer.id;
+      customerId = await findCustomerByEmail(user.email, razorpayKeyId, razorpayKeySecret);
+      if (customerId) console.log("create-subscription: reused customer by email", customerId);
+    }
+
+    if (!customerId) {
+      try {
+        const customer = await apiFetch("/v1/customers", razorpayKeyId, razorpayKeySecret, {
+          method: "POST",
+          body: JSON.stringify({
+            name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+            email: user.email || undefined,
+            notes: { user_id: user.id },
+          }),
+        });
+        customerId = customer.id;
+        console.log("create-subscription: customer ready", customerId);
+      } catch (err) {
+        // Race / duplicate: another attempt may have just created it — search again
+        customerId = await findCustomerByEmail(user.email, razorpayKeyId, razorpayKeySecret);
+        if (!customerId) throw err;
+        console.log("create-subscription: recovered existing customer by email", customerId);
+      }
     }
 
     // 2. Find an existing plan for this period/amount, otherwise create one
@@ -106,6 +137,7 @@ serve(async (req) => {
       });
       planId = created.id;
     }
+    console.log("create-subscription: plan ready", planId);
 
     // 3. Create an auto-renewing subscription (renews every cycle until cancelled)
     const subscription = await apiFetch("/v1/subscriptions", razorpayKeyId, razorpayKeySecret, {
@@ -119,11 +151,13 @@ serve(async (req) => {
       }),
     });
 
+    console.log("create-subscription: subscription ready", subscription.id);
     return new Response(
       JSON.stringify({ subscription_id: subscription.id, key_id: razorpayKeyId, amount: cfg.amount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    console.error("create-subscription FAILED:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
