@@ -32,7 +32,6 @@ import UndoToast from './components/UndoToast';
 import PWAInstall from './components/PWAInstall';
 import FeedbackForm from './components/FeedbackForm';
 import PricingPage from './components/PricingPage';
-import ProGate from './components/ProGate';
 import { useSubscription } from './hooks/useSubscription';
 import LoadingScreen from './components/LoadingScreen';
 

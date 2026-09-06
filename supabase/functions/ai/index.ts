@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,16 +48,22 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing authorization" }), {
+    // Verify the caller is a signed-in user. The anon key alone must NOT be
+    // enough to use the paid Gemini API — only real user sessions pass here.
+    const authHeader = req.headers.get("Authorization") || "";
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const userId = authHeader.replace("Bearer ", "").substring(0, 50);
+    const userId = user.id;
 
     // Check URL path for different endpoints
     const url = new URL(req.url);
@@ -109,21 +116,7 @@ serve(async (req) => {
 
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    const models = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
-    let model = null;
-
-    for (const modelName of models) {
-      try {
-        model = genAI.getGenerativeModel({ model: modelName });
-        break;
-      } catch {
-        continue;
-      }
-    }
-
-    if (!model) {
-      throw new Error("No available Gemini model.");
-    }
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const { prompt, image } = await req.json();
 

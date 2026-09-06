@@ -35,6 +35,13 @@ async function callEdgeFunction(prompt: string, image?: { mimeType: string; data
 
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+  // Send the signed-in user's session token so the server can identify the
+  // caller and rate-limit per user. The anon key alone would let anyone burn
+  // your Gemini quota.
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (!accessToken) throw new Error('Please sign in to use the AI assistant.');
+
   const url = `${supabaseUrl}/functions/v1/ai`;
 
   const body: Record<string, unknown> = { prompt };
@@ -45,7 +52,7 @@ async function callEdgeFunction(prompt: string, image?: { mimeType: string; data
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'apikey': anonKey,
-    'Authorization': `Bearer ${anonKey}`,
+    'Authorization': `Bearer ${accessToken}`,
   };
 
   const res = await fetch(url, {

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, X, Plus, Globe } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 import { searchFood, CATEGORIES, type FoodItem, type FoodCategory } from '../data/foodDatabase';
 
 const searchCache = new Map<string, FoodItem[]>();
@@ -38,7 +39,9 @@ export default function FoodSearch({ onSelect, onManualEntry, onClose }: FoodSea
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      if (!supabaseUrl || !anonKey) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!supabaseUrl || !anonKey || !accessToken) {
         setOnlineResults([]);
         setSearchingOnline(false);
         return;
@@ -47,7 +50,7 @@ export default function FoodSearch({ onSelect, onManualEntry, onClose }: FoodSea
       const res = await fetch(`${supabaseUrl}/functions/v1/ai/food-search?q=${encodeURIComponent(q)}`, {
         headers: {
           'apikey': anonKey,
-          'Authorization': `Bearer ${anonKey}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 
