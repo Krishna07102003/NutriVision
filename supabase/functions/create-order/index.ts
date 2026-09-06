@@ -46,6 +46,7 @@ serve(async (req) => {
         amount,
         currency: "INR",
         receipt: `nv_${user.id}_${Date.now()}`,
+        notes: { user_id: user.id },
       }),
     });
 

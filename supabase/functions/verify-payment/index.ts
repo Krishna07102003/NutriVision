@@ -72,7 +72,7 @@ serve(async (req) => {
     const expected = await hmacSha256(razorpayKeySecret, `${razorpay_order_id}|${razorpay_payment_id}`);
     if (expected !== razorpay_signature) throw new Error("Invalid payment signature");
 
-    // 2. Confirm the order exists, is paid, and matches the expected amount
+    // 2. Confirm the order exists, is paid, belongs to this user, and matches the amount
     const auth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
     const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
       headers: { "Authorization": `Basic ${auth}` },
@@ -80,13 +80,18 @@ serve(async (req) => {
     if (!orderRes.ok) throw new Error("Could not verify order");
     const order = await orderRes.json();
     if (order.amount !== amount) throw new Error("Payment amount mismatch");
+    // The order must have been created for THIS user — prevents replaying someone else's payment
+    if (order.notes?.user_id !== user.id) throw new Error("Order does not belong to this account");
 
     const payRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
       headers: { "Authorization": `Basic ${auth}` },
     });
     if (!payRes.ok) throw new Error("Could not verify payment");
     const payment = await payRes.json();
-    if (payment.status !== "captured" && payment.status !== "authorized") {
+    // The payment must belong to this order and be genuinely captured
+    if (payment.order_id !== razorpay_order_id) throw new Error("Payment does not match order");
+    if (payment.amount !== order.amount) throw new Error("Payment amount mismatch");
+    if (payment.status !== "captured") {
       throw new Error("Payment not captured");
     }
 
