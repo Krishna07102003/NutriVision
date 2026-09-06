@@ -279,6 +279,36 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
         <Plus className={`w-6 h-6 transition-transform ${showQuickMenu ? 'rotate-45' : ''}`} />
       </button>
 
+      {/* Meal upload / analysis progress indicator (non-blocking) */}
+      {nutrition.uploadStage && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm pointer-events-none">
+          <div className="card rounded-2xl px-5 py-4 border border-[var(--border-color)] shadow-2xl flex items-center gap-4">
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <div className="absolute inset-0 rounded-full border-[3px] border-[var(--border-color)] border-t-[var(--accent)] animate-spin" />
+              <Camera className="absolute inset-0 m-auto w-4 h-4 text-[var(--accent)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[var(--text-primary)] truncate">
+                {nutrition.uploadStage === 'uploading' ? 'Uploading meal photo…' : 'Analyzing macros…'}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] truncate">
+                {nutrition.uploadStage === 'uploading'
+                  ? 'Compressing and uploading your image'
+                  : 'AI is detecting calories, protein, carbs & fat'}
+              </p>
+              <div className="mt-2 h-1 rounded-full bg-[var(--border-color)] overflow-hidden">
+                <div
+                  className={`h-full rounded-full bg-[var(--accent)] transition-all duration-700 ease-out ${nutrition.uploadStage === 'uploading' ? 'w-1/4' : 'w-3/4'}`}
+                />
+              </div>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-bold flex-shrink-0">
+              {manualMealType.replace('_', ' ')}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Hidden photo inputs - key forces React to destroy and recreate input, allowing same file to be selected again */}
       <input
         key={`camera-${cameraKey}`}

@@ -21,6 +21,7 @@ interface UseNutritionReturn {
   selectedTotals: MacroTotals;
   totals: MacroTotals;
   analyzing: boolean;
+  uploadStage: 'uploading' | 'analyzing' | null;
   activeMealType: string;
   setActiveMealType: (type: string) => void;
   loadingEntries: boolean;
@@ -48,6 +49,7 @@ interface UseNutritionReturn {
 export function useNutrition(userId: string | null, goals: MacroGoals): UseNutritionReturn {
   const [entries, setEntries] = useState<NutritionEntry[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [uploadStage, setUploadStage] = useState<'uploading' | 'analyzing' | null>(null);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [activeMealType, setActiveMealType] = useState<string>('other');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -351,6 +353,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     const uploadTimestamp = localISO();
     isUploadingRef[0] = true;
     setAnalyzing(true);
+    setUploadStage('uploading');
     setErrorMsg(null);
 
     try {
@@ -380,6 +383,9 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
       // Compress image before upload (saves ~70% storage)
       const compressedBlob = await compressImage(file, 800, 0.7);
       const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+
+      // Compression done — now analyzing (or reusing previous analysis)
+      setUploadStage('analyzing');
 
       // Hash the compressed image to detect duplicates
       const imageHash = await hashBlob(compressedBlob);
@@ -478,6 +484,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
       setErrorMsg('Failed to log this meal. ' + message);
     } finally {
       setAnalyzing(false);
+      setUploadStage(null);
       isUploadingRef[0] = false;
     }
   };
@@ -650,6 +657,7 @@ export function useNutrition(userId: string | null, goals: MacroGoals): UseNutri
     selectedTotals,
     totals,
     analyzing,
+    uploadStage,
     activeMealType,
     setActiveMealType,
     loadingEntries,
