@@ -294,7 +294,7 @@ export function Dashboard({ auth, nutrition, coach, weight, favorites, recipes, 
               <p className="text-xs text-[var(--text-muted)] truncate">
                 {nutrition.uploadStage === 'uploading'
                   ? 'Compressing and uploading your image'
-                  : 'AI is detecting calories, protein, carbs & fat'}
+                  : 'Calculating calories, protein, carbs & fat'}
               </p>
               <div className="mt-2 h-1 rounded-full bg-[var(--border-color)] overflow-hidden">
                 <div
