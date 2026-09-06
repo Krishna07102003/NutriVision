@@ -13,6 +13,9 @@ function getFriendlyError(status: number, message: string): string {
   if (status === 404) {
     return 'AI model unavailable. Please try again later.';
   }
+  if (status === 401) {
+    return 'Your session expired. Please refresh the page and sign in again.';
+  }
   if (status >= 500) {
     return 'AI service is temporarily down. Please try again in a minute.';
   }
@@ -38,9 +41,14 @@ async function callEdgeFunction(prompt: string, image?: { mimeType: string; data
   // Send the signed-in user's session token so the server can identify the
   // caller and rate-limit per user. The anon key alone would let anyone burn
   // your Gemini quota.
+  // getUser() validates the session AND refreshes the token if it expired,
+  // so we never send a stale token that the server would reject with 401.
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error('Your session expired. Please refresh the page and sign in again.');
+
   const { data: { session } } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
-  if (!accessToken) throw new Error('Please sign in to use the AI assistant.');
+  if (!accessToken) throw new Error('Your session expired. Please refresh the page and sign in again.');
 
   const url = `${supabaseUrl}/functions/v1/ai`;
 

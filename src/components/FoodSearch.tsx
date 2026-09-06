@@ -39,9 +39,11 @@ export default function FoodSearch({ onSelect, onManualEntry, onClose }: FoodSea
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      // Validate + refresh the session so the token isn't expired when sent
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
-      if (!supabaseUrl || !anonKey || !accessToken) {
+      if (!supabaseUrl || !anonKey || !user || !accessToken) {
         setOnlineResults([]);
         setSearchingOnline(false);
         return;
