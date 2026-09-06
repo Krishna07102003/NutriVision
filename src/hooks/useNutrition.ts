@@ -358,19 +358,36 @@ export function useNutrition(userId: string | null, goals: MacroGoals, isPro = f
     setErrorMsg(null);
 
     try {
-      // Check daily photo upload limit
-      const today = new Date();
-      const startOfDay = todayLocal() + 'T00:00:00';
-      const { count } = await supabase
-        .from('nutrition_entries')
-        .select('id', { count: 'exact', head: true })
+      // Check daily photo upload limit — counts EVERY upload, even if the
+      // meal is later deleted, so deleting a meal never frees up a slot.
+      const todayDate = todayLocal();
+      let used = 0;
+      const { data: logRow, error: logErr } = await supabase
+        .from('photo_upload_log')
+        .select('count')
         .eq('user_id', userId)
-        .not('image_url', 'is', null)
-        .gte('timestamp', startOfDay);
+        .eq('upload_date', todayDate)
+        .maybeSingle();
 
-      if ((count ?? 0) >= MAX_PHOTO_UPLOADS_PER_DAY) {
+      if (logErr || !logRow) {
+        // Log table not ready / no row yet — fall back to counting current
+        // photo entries so uploads still work.
+        const startOfDay = todayDate + 'T00:00:00';
+        const { count } = await supabase
+          .from('nutrition_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .not('image_url', 'is', null)
+          .gte('timestamp', startOfDay);
+        used = count ?? 0;
+      } else {
+        used = logRow.count ?? 0;
+      }
+
+      if (used >= MAX_PHOTO_UPLOADS_PER_DAY) {
         setErrorMsg(`You've reached the daily limit of ${MAX_PHOTO_UPLOADS_PER_DAY} photo uploads. Try logging meals manually instead.`);
         setAnalyzing(false);
+        setUploadStage(null);
         return;
       }
 
@@ -480,6 +497,15 @@ export function useNutrition(userId: string | null, goals: MacroGoals, isPro = f
 
       if (insertError) throw insertError;
       insertLocal({ id: inserted.id, timestamp: uploadTimestamp, image: imageUrl, ...nutrition });
+
+      // Increment the persistent daily upload counter. Deleted meals still
+      // count toward the limit, so this is never decremented on delete.
+      try {
+        await supabase.from('photo_upload_log').upsert(
+          { user_id: userId, upload_date: todayDate, count: used + 1 },
+          { onConflict: 'user_id,upload_date' }
+        );
+      } catch {}
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Please try again.';
       setErrorMsg('Failed to log this meal. ' + message);
