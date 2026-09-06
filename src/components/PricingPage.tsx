@@ -42,8 +42,16 @@ export default function PricingPage({ subscription }: PricingPageProps) {
 
   const savings = Math.round(((99 * 12 - 799) / (99 * 12)) * 100);
   const sub = subscription.subscription;
+  // Window is 24h from purchase. Fall back to created_at if start_date is missing/invalid.
+  const purchaseMs = (() => {
+    const start = sub?.start_date ? new Date(sub.start_date).getTime() : NaN;
+    if (!Number.isNaN(start)) return start;
+    const created = sub?.created_at ? new Date(sub.created_at).getTime() : NaN;
+    return Number.isNaN(created) ? Date.now() : created;
+  })();
+  const hoursSincePurchase = Math.max(0, (Date.now() - purchaseMs) / (60 * 60 * 1000));
   const cancelWindowOpen =
-    !!sub && !subscription.isTrialActive && Date.now() - new Date(sub.start_date).getTime() <= 24 * 60 * 60 * 1000;
+    !!sub && !subscription.isTrialActive && hoursSincePurchase <= 24;
 
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-6 animate-page-in">
@@ -108,19 +116,22 @@ export default function PricingPage({ subscription }: PricingPageProps) {
           {!cancelWindowOpen && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
               <p className="text-xs text-[var(--text-muted)]">
-                Cancellation and refunds are available within the first <b>24 hours</b> of purchase only. This purchase is more than 24 hours old, so it can no longer be cancelled from the app. Contact support for help.
+                Cancellation and refunds are available within the first <b>24 hours</b> of purchase only. Purchased on{' '}
+                {new Date(purchaseMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — this
+                purchase is more than 24 hours old, so it can no longer be cancelled from the app. Contact support for help.
               </p>
             </div>
           )}
-          {cancelWindowOpen && !confirmCancel ? (
+          {cancelWindowOpen && !confirmCancel && (
             <button
               onClick={() => setConfirmCancel(true)}
               disabled={subscription.loading}
               className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/10 transition-colors disabled:opacity-50"
             >
-              Cancel subscription (full refund within 24h)
+              Cancel subscription (full refund within {Math.max(0, Math.ceil(24 - hoursSincePurchase))}h)
             </button>
-          ) : (
+          )}
+          {cancelWindowOpen && confirmCancel && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
               <p className="text-sm text-[var(--text-primary)] font-semibold mb-3">
                 Cancel now and get a full refund of ₹{((sub?.amount || 0) / 100).toFixed(0)}? Pro will be removed immediately. This cannot be undone.

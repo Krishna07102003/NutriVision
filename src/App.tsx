@@ -254,9 +254,9 @@ function AppContent() {
                 </Link>
               )}
               {subscription.isPro && !subscription.isTrialActive && (
-                <span className="flex items-center gap-1 text-xs text-emerald-400">
+                <Link to="/pricing" className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-bold" title="Manage subscription">
                   <Crown className="w-3.5 h-3.5" /> Pro
-                </span>
+                </Link>
               )}
               <LanguageToggle />
               <ThemeToggle />
