@@ -47,6 +47,9 @@ export async function createSubscriptionOrder(
   userEmail: string,
   userName: string,
 ): Promise<{ success: boolean; endDate?: string }> {
+  if (!RAZORPAY_KEY_ID) {
+    throw new Error('Razorpay is not configured on this deployment yet. Please try again in a few minutes.');
+  }
   // Create order server-side first
   const { order_id: orderId, amount } = await createRazorpayOrder(plan);
 
