@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Check, Crown, Zap, Sparkles, ArrowLeft } from 'lucide-react';
+import { Check, Crown, Zap, Sparkles, ArrowLeft, Calendar, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { SubscriptionState } from '../hooks/useSubscription';
+import type { PlanName } from '../utils/razorpay';
 
 interface PricingPageProps {
   subscription: SubscriptionState;
@@ -17,14 +18,29 @@ const PRO_FEATURES = [
 ];
 
 export default function PricingPage({ subscription }: PricingPageProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
+  const [selectedPlan, setSelectedPlan] = useState<PlanName>('yearly');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const navigate = useNavigate();
 
   const handleSubscribe = async () => {
-    await subscription.subscribe(selectedPlan);
+    const result = await subscription.subscribe(selectedPlan);
+    if (result.success) setShowSuccess(true);
+  };
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    const result = await subscription.cancel();
+    setCancelling(false);
+    if (result.success) {
+      setConfirmCancel(false);
+      setShowSuccess(false);
+    }
   };
 
   const savings = Math.round(((99 * 12 - 799) / (99 * 12)) * 100);
+  const sub = subscription.subscription;
 
   return (
     <div className="max-w-2xl mx-auto py-6 space-y-6 animate-page-in">
@@ -55,20 +71,75 @@ export default function PricingPage({ subscription }: PricingPageProps) {
             <Sparkles className="w-4 h-4 inline mr-1" />
             Free Trial Active — {subscription.trialDaysLeft} day{subscription.trialDaysLeft !== 1 ? 's' : ''} left
           </p>
-          <p className="text-xs text-[var(--text-muted)] mt-1">All Pro features are available during your trial</p>
+          <p className="text-xs text-[var(--text-muted)] mt-1">All Pro features are available during your trial. Subscribe now to keep Pro after it ends.</p>
         </div>
       )}
 
-      {subscription.isPro && !subscription.isTrialActive && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
-          <p className="text-sm text-emerald-400 font-bold">
-            <Check className="w-4 h-4 inline mr-1" />
-            You're already a Pro member!
-          </p>
-          <p className="text-xs text-[var(--text-muted)] mt-1">
-            {subscription.subscription?.plan === 'monthly' ? 'Monthly' : 'Yearly'} plan — Renews{' '}
-            {subscription.subscription?.end_date ? new Date(subscription.subscription.end_date).toLocaleDateString() : ''}
-          </p>
+      {subscription.isPro && !subscription.isTrialActive && sub && (
+        <div className="border border-emerald-500/20 rounded-2xl p-6 bg-emerald-500/5">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h2 className="text-sm font-bold text-emerald-400">You're a Pro member</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold mb-1">Plan</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] capitalize">
+                {sub.plan === 'monthly' ? 'Monthly' : 'Yearly'} · ₹{sub.plan === 'monthly' ? 99 : 799}
+              </p>
+            </div>
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold mb-1">Renews on</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">
+                {new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold mb-1">Last payment</p>
+              <p className="text-sm font-bold text-[var(--text-primary)] tabular-nums">
+                ₹{(sub.amount / 100).toFixed(0)} · {new Date(sub.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </p>
+            </div>
+          </div>
+
+          {!confirmCancel ? (
+            <button
+              onClick={() => setConfirmCancel(true)}
+              disabled={subscription.loading}
+              className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 text-sm font-bold hover:bg-red-500/10 transition-colors disabled:opacity-50"
+            >
+              Cancel subscription
+            </button>
+          ) : (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+              <p className="text-sm text-[var(--text-primary)] font-semibold mb-3">
+                Are you sure you want to cancel? You'll keep Pro until {new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmCancel(false)}
+                  disabled={cancelling}
+                  className="flex-1 py-2.5 rounded-lg border border-[var(--border-color)] text-sm text-[var(--text-muted)] transition-colors disabled:opacity-50"
+                >
+                  Keep Pro
+                </button>
+                <button
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="flex-1 py-2.5 rounded-lg bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {cancelling ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    'Yes, cancel'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -84,7 +155,7 @@ export default function PricingPage({ subscription }: PricingPageProps) {
           >
             <p className="text-xs uppercase tracking-wider text-[var(--text-muted)] font-semibold mb-2">Monthly</p>
             <p className="text-3xl font-bold text-[var(--text-primary)]">₹99<span className="text-sm font-normal text-[var(--text-muted)]">/month</span></p>
-            <p className="text-xs text-[var(--text-muted)] mt-1">Billed monthly</p>
+            <p className="text-xs text-[var(--text-muted)] mt-1">Billed monthly. Cancel anytime.</p>
             {selectedPlan === 'monthly' && (
               <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-accent flex items-center justify-center">
                 <Check className="w-3 h-3 text-white" />
@@ -149,9 +220,39 @@ export default function PricingPage({ subscription }: PricingPageProps) {
         </button>
       )}
 
-      <p className="text-[10px] text-[var(--text-muted)] text-center">
-        Payments are processed securely via Razorpay. Cancel anytime from your profile.
+      <p className="text-[10px] text-[var(--text-muted)] text-center flex items-center justify-center gap-1">
+        <CreditCard className="w-3 h-3" />
+        Payments are processed securely via Razorpay. Cancel anytime from this page.
       </p>
+
+      {/* Payment success modal */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => setShowSuccess(false)}>
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 max-w-sm w-full shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">Payment Successful 🎉</h3>
+            <p className="text-sm text-[var(--text-muted)] mb-2">
+              You're now a Pro member! All premium features are unlocked.
+            </p>
+            {sub && (
+              <p className="text-xs text-[var(--text-muted)] mb-5">
+                <Calendar className="w-3 h-3 inline mr-1" />
+                Pro active until {new Date(sub.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="w-full py-3 rounded-xl bg-accent text-white text-sm font-bold hover:opacity-90 transition-opacity"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

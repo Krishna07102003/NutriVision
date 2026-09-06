@@ -6,6 +6,13 @@ declare global {
   }
 }
 
+export const PLAN_PRICES = {
+  monthly: 99,
+  yearly: 799,
+} as const;
+
+export type PlanName = keyof typeof PLAN_PRICES;
+
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 // Load Razorpay script dynamically
@@ -20,31 +27,28 @@ export function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-// Create order via Supabase Edge Function (server-side)
-async function createRazorpayOrder(amount: number): Promise<string> {
+// Create order via Supabase Edge Function (server-side, price decided on the server)
+async function createRazorpayOrder(plan: PlanName): Promise<{ order_id: string; amount: number }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
   const { data, error } = await supabase.functions.invoke('create-order', {
-    body: { amount, currency: 'INR' },
+    body: { plan },
   });
 
   if (error) throw new Error(error.message || 'Failed to create order');
   if (!data?.order_id) throw new Error('No order ID returned');
-  return data.order_id;
+  return data as { order_id: string; amount: number };
 }
 
 // Open Razorpay checkout with server-created order
 export async function createSubscriptionOrder(
-  plan: 'monthly' | 'yearly',
-  userId: string,
+  plan: PlanName,
   userEmail: string,
   userName: string,
-) {
-  const amount = plan === 'monthly' ? 9900 : 79900; // In paise
-
+): Promise<{ success: boolean; endDate?: string }> {
   // Create order server-side first
-  const orderId = await createRazorpayOrder(amount);
+  const { order_id: orderId, amount } = await createRazorpayOrder(plan);
 
   return new Promise((resolve, reject) => {
     const options = {
@@ -56,32 +60,22 @@ export async function createSubscriptionOrder(
       image: '/icon-192.png',
       order_id: orderId,
       handler: async function (response: any) {
-        // Payment successful
-        const endDate = new Date();
-        if (plan === 'monthly') endDate.setMonth(endDate.getMonth() + 1);
-        else endDate.setFullYear(endDate.getFullYear() + 1);
-
-        const { error } = await supabase.from('subscriptions').upsert({
-          user_id: userId,
-          plan,
-          status: 'active',
-          razorpay_subscription_id: response.razorpay_subscription_id || null,
-          razorpay_order_id: response.razorpay_order_id,
-          razorpay_payment_id: response.razorpay_payment_id,
-          amount,
-          start_date: new Date().toISOString(),
-          end_date: endDate.toISOString(),
-        }, { onConflict: 'user_id' });
+        // Payment successful — verify server-side before trusting it
+        const { data, error } = await supabase.functions.invoke('verify-payment', {
+          body: {
+            plan,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          },
+        });
 
         if (error) {
-          console.error('Subscription save error:', error);
-          reject(error);
+          console.error('Verify payment error:', error);
+          reject(new Error('Payment was successful but we could not confirm it yet. Your payment is safe — contact support with your payment ID.'));
           return;
         }
-
-        // Update user_profiles is_pro flag
-        await supabase.from('user_profiles').update({ is_pro: true }).eq('id', userId);
-        resolve({ success: true });
+        resolve({ success: true, endDate: data?.end_date });
       },
       prefill: {
         name: userName,
@@ -106,6 +100,6 @@ export async function createSubscriptionOrder(
   });
 }
 
-export function getPlanPrice(plan: 'monthly' | 'yearly') {
-  return plan === 'monthly' ? 99 : 799;
+export function getPlanPrice(plan: PlanName) {
+  return PLAN_PRICES[plan];
 }

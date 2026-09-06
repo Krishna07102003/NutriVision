@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
-import { loadRazorpayScript, createSubscriptionOrder } from '../utils/razorpay';
+import { loadRazorpayScript, createSubscriptionOrder, type PlanName } from '../utils/razorpay';
 
 export interface Subscription {
   id: string;
   user_id: string;
-  plan: 'monthly' | 'yearly';
+  plan: PlanName;
   status: 'active' | 'expired' | 'cancelled' | 'trial';
   razorpay_subscription_id: string | null;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string | null;
   amount: number;
   start_date: string;
   end_date: string;
@@ -21,7 +23,8 @@ export interface SubscriptionState {
   trialDaysLeft: number;
   loading: boolean;
   error: string;
-  subscribe: (plan: 'monthly' | 'yearly') => Promise<void>;
+  subscribe: (plan: PlanName) => Promise<{ success: boolean; cancelled?: boolean }>;
+  cancel: () => Promise<{ success: boolean }>;
   refresh: () => Promise<void>;
 }
 
@@ -84,8 +87,8 @@ export function useSubscription(userId: string | null): SubscriptionState {
     checkSubscription();
   }, [checkSubscription]);
 
-  const subscribe = async (plan: 'monthly' | 'yearly') => {
-    if (!userId) return;
+  const subscribe = async (plan: PlanName) => {
+    if (!userId) return { success: false };
     setError('');
     setLoading(true);
 
@@ -99,15 +102,37 @@ export function useSubscription(userId: string | null): SubscriptionState {
       const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
       const userEmail = user.email || '';
 
-      await createSubscriptionOrder(plan, userId, userEmail, userName);
-      // Refresh subscription after payment
-      setTimeout(() => checkSubscription(), 2000);
+      const result = await createSubscriptionOrder(plan, userEmail, userName);
+      await checkSubscription();
+      return result;
     } catch (err: any) {
       const message = err?.message || 'Payment failed. Please try again.';
       if (message !== 'Payment cancelled') {
         setError(message);
         console.error('Subscribe error:', err);
       }
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancel = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('verify-payment', {
+        body: { action: 'cancel' },
+      });
+      if (fnError) throw new Error(fnError.message || 'Could not cancel subscription');
+      if (!data?.success) throw new Error('Could not cancel subscription');
+      await checkSubscription();
+      return { success: true };
+    } catch (err: any) {
+      const message = err?.message || 'Could not cancel subscription.';
+      setError(message);
+      console.error('Cancel error:', err);
+      return { success: false };
     } finally {
       setLoading(false);
     }
@@ -121,6 +146,7 @@ export function useSubscription(userId: string | null): SubscriptionState {
     loading,
     error,
     subscribe,
+    cancel,
     refresh: checkSubscription,
   };
 }
