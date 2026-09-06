@@ -28,7 +28,7 @@ export function loadRazorpayScript(): Promise<boolean> {
 }
 
 // Create order via Supabase Edge Function (server-side, price decided on the server)
-async function createRazorpayOrder(plan: PlanName): Promise<{ order_id: string; amount: number }> {
+async function createRazorpayOrder(plan: PlanName): Promise<{ order_id: string; amount: number; key_id: string }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
@@ -38,7 +38,7 @@ async function createRazorpayOrder(plan: PlanName): Promise<{ order_id: string; 
 
   if (error) throw new Error(error.message || 'Failed to create order');
   if (!data?.order_id) throw new Error('No order ID returned');
-  return data as { order_id: string; amount: number };
+  return data as { order_id: string; amount: number; key_id: string };
 }
 
 // Open Razorpay checkout with server-created order
@@ -47,15 +47,16 @@ export async function createSubscriptionOrder(
   userEmail: string,
   userName: string,
 ): Promise<{ success: boolean; endDate?: string }> {
-  if (!RAZORPAY_KEY_ID) {
+  // Create order server-side first; the server returns the public Razorpay key
+  const { order_id: orderId, amount, key_id: serverKeyId } = await createRazorpayOrder(plan);
+  const razorpayKey = serverKeyId || RAZORPAY_KEY_ID;
+  if (!razorpayKey) {
     throw new Error('Razorpay is not configured on this deployment yet. Please try again in a few minutes.');
   }
-  // Create order server-side first
-  const { order_id: orderId, amount } = await createRazorpayOrder(plan);
 
   return new Promise((resolve, reject) => {
     const options = {
-      key: RAZORPAY_KEY_ID,
+      key: razorpayKey,
       amount,
       currency: 'INR',
       name: 'NutriVision',

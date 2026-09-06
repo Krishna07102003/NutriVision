@@ -55,7 +55,7 @@ serve(async (req) => {
     }
 
     const order = await response.json();
-    return new Response(JSON.stringify({ order_id: order.id, amount }), {
+    return new Response(JSON.stringify({ order_id: order.id, amount, key_id: razorpayKeyId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
