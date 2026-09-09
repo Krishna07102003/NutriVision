@@ -58,7 +58,7 @@ export default function AuthScreen() {
       // Web: standard OAuth flow
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: { redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } },
       });
       if (oauthError) {
         setError(oauthError.message);
