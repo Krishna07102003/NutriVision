@@ -5,7 +5,7 @@ import ThemeToggle from './ThemeToggle';
 import { isValidEmail, isValidPhone, isValidOTP, sanitizeText } from '../utils/validation';
 import { checkLimit, resetRateLimit, cleanupRateLimits } from '../utils/rateLimit';
 
-type AuthMethod = 'choose' | 'email' | 'phone' | 'otp' | 'link-sent';
+type AuthMethod = 'choose' | 'email' | 'phone' | 'otp' | 'link-sent' | 'password';
 
 export default function AuthScreen() {
   const [method, setMethod] = useState<AuthMethod>('choose');
@@ -129,7 +129,30 @@ export default function AuthScreen() {
     setLoading(false);
   };
 
-  const goBack = () => { setMethod('choose'); setOtpSent(false); setOtp(''); setError(''); };
+  const [password, setPassword] = useState('');
+
+  const handlePasswordLogin = async () => {
+    const limit = checkLimit('LOGIN');
+    if (!limit.allowed) {
+      setError(`Too many attempts. Please wait ${limit.retryAfter} seconds.`);
+      return;
+    }
+    if (!isValidEmail(email)) { setError('Please enter a valid email address.'); return; }
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    setLoading(true);
+    setError('');
+    const { error: pwError } = await supabase.auth.signInWithPassword({ email, password });
+    if (pwError) {
+      setError('Invalid email or password.');
+    } else {
+      resetRateLimit('LOGIN');
+      resetRateLimit('OTP');
+      resetRateLimit('RESEND');
+    }
+    setLoading(false);
+  };
+
+  const goBack = () => { setMethod('choose'); setOtpSent(false); setOtp(''); setError(''); setPassword(''); };
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] flex flex-col items-center justify-center px-6 relative">
@@ -171,7 +194,44 @@ export default function AuthScreen() {
               <span>{loading ? 'Redirecting...' : 'Continue with Google'}</span>
             </button>
 
+            <button
+              onClick={() => { setMethod('password'); setError(''); }}
+              className="w-full flex items-center justify-center gap-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] px-6 py-3.5 rounded-lg font-bold text-sm hover:bg-[var(--bg-hover)] transition-all cursor-pointer"
+            >
+              <Mail className="w-5 h-5 text-[var(--text-muted)]" />
+              <span>Sign in with Email</span>
+            </button>
+          </>
+        )}
 
+        {/* EMAIL + PASSWORD LOGIN */}
+        {method === 'password' && (
+          <>
+            <button onClick={goBack} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] text-sm mb-4">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <label className="text-xs text-[var(--text-muted)] mb-2 block">Email address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full bg-transparent border-b border-[var(--border-color)] focus:border-[var(--accent)] px-0 py-3 text-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none transition-colors"
+            />
+            <label className="text-xs text-[var(--text-muted)] mb-2 mt-6 block">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              onKeyDown={(e) => e.key === 'Enter' && handlePasswordLogin()}
+              className="w-full bg-transparent border-b border-[var(--border-color)] focus:border-[var(--accent)] px-0 py-3 text-lg text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none transition-colors"
+            />
+            <button
+              onClick={handlePasswordLogin}
+              disabled={loading || !email.trim() || !password.trim()}
+              className="w-full bg-accent text-white py-3.5 rounded-lg font-bold text-sm hover:bg-accent-dim disabled:bg-[var(--bg-hover)] disabled:text-[var(--text-muted)] transition-colors mt-6"
+            >{loading ? 'Signing in...' : 'Sign In'}</button>
           </>
         )}
 
