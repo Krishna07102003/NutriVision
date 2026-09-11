@@ -135,17 +135,20 @@ serve(async (req) => {
       const expected = await hmacSha256(razorpayKeySecret, `${razorpay_payment_id}|${razorpay_subscription_id}`);
       if (expected !== razorpay_signature) throw new Error("Invalid payment signature");
 
-      // The subscription must belong to this user
+      // The payment itself is the source of truth: must be captured and match the plan amount
+      const payment = await apiFetch(`/v1/payments/${razorpay_payment_id}`, razorpayKeyId, razorpayKeySecret);
+      if (payment.status !== "captured") throw new Error(`Payment not captured (status: ${payment.status})`);
+      if (payment.amount !== amount) throw new Error("Payment amount mismatch");
+
+      // The subscription must belong to this user. Its status may briefly be
+      // pending/authenticated while the mandate activates — that's fine, the
+      // captured payment is what matters. Only reject hard failures.
       const subEntity = await apiFetch(`/v1/subscriptions/${razorpay_subscription_id}`, razorpayKeyId, razorpayKeySecret);
       if (subEntity.notes?.user_id !== user.id) throw new Error("Subscription does not belong to this account");
       if (subEntity.notes?.plan !== plan) throw new Error("Subscription plan mismatch");
-      if (subEntity.status !== "active" && subEntity.status !== "authenticated") {
-        throw new Error("Subscription is not active");
+      if (subEntity.status === "cancelled" || subEntity.status === "expired" || subEntity.status === "halted") {
+        throw new Error(`Subscription is ${subEntity.status}`);
       }
-
-      const payment = await apiFetch(`/v1/payments/${razorpay_payment_id}`, razorpayKeyId, razorpayKeySecret);
-      if (payment.status !== "captured") throw new Error("Payment not captured");
-      if (payment.amount !== amount) throw new Error("Payment amount mismatch");
       if (payment.subscription_id && payment.subscription_id !== razorpay_subscription_id) {
         throw new Error("Payment does not match subscription");
       }
