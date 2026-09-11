@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, Crown, Zap, Sparkles, ArrowLeft, Calendar, CreditCard } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import type { SubscriptionState } from '../hooks/useSubscription';
 import type { PlanName } from '../utils/razorpay';
 
@@ -262,6 +262,14 @@ export default function PricingPage({ subscription }: PricingPageProps) {
       <p className="text-[10px] text-[var(--text-muted)] text-center flex items-center justify-center gap-1">
         <CreditCard className="w-3 h-3" />
         Payments are processed securely via Razorpay. Cancel anytime from this page.
+      </p>
+
+      <p className="text-[10px] text-[var(--text-muted)] text-center max-w-sm mx-auto leading-relaxed">
+        By subscribing you agree to our{' '}
+        <Link to="/terms" className="underline hover:text-[var(--text-primary)]">Terms</Link>,{' '}
+        <Link to="/privacy-policy" className="underline hover:text-[var(--text-primary)]">Privacy Policy</Link> and{' '}
+        <Link to="/refund-policy" className="underline hover:text-[var(--text-primary)]">Refund &amp; Cancellation Policy</Link>
+        (full refund within 24 hours of any charge). Questions? <Link to="/contact" className="underline hover:text-[var(--text-primary)]">Contact us</Link>.
       </p>
 
       {/* Payment success modal */}

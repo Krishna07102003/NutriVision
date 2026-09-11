@@ -34,6 +34,14 @@ import FeedbackForm from './components/FeedbackForm';
 import PricingPage from './components/PricingPage';
 import { useSubscription } from './hooks/useSubscription';
 import LoadingScreen from './components/LoadingScreen';
+import { TermsPage, PrivacyPage, RefundPolicyPage, ContactPage } from './components/LegalPages';
+
+const LEGAL_ROUTES: Record<string, React.ReactElement> = {
+  '/terms': <TermsPage />,
+  '/privacy-policy': <PrivacyPage />,
+  '/refund-policy': <RefundPolicyPage />,
+  '/contact': <ContactPage />,
+};
 
 const INITIAL_FORM: OnboardingFormData = {
   referralSource: '', previousApps: '', painPoints: [], accomplishment: '',
@@ -129,6 +137,12 @@ function AppContent() {
     }
     setEditingProfile(true);
   };
+
+  // PUBLIC LEGAL PAGES (accessible signed-in or signed-out)
+  const legalPage = LEGAL_ROUTES[location.pathname];
+  if (legalPage) {
+    return <ErrorBoundary>{legalPage}</ErrorBoundary>;
+  }
 
   // LOADING
   if (auth.authLoading) {
@@ -531,15 +545,23 @@ function AppContent() {
         </main>
 
         <footer className="border-t border-[var(--border-color)] mt-16">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex items-center justify-between">
-            <p className="text-[var(--text-muted)] text-xs">{t('appName')}</p>
-            <button
-              onClick={() => setShowFeedback(true)}
-              className="flex items-center gap-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] text-xs transition-colors"
-            >
-              <MessageSquareWarning className="w-3.5 h-3.5" />
-              <span>Feedback</span>
-            </button>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[var(--text-muted)] text-xs">{t('appName')}</p>
+              <button
+                onClick={() => setShowFeedback(true)}
+                className="flex items-center gap-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] text-xs transition-colors"
+              >
+                <MessageSquareWarning className="w-3.5 h-3.5" />
+                <span>Feedback</span>
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]">
+              <Link to="/terms" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Terms &amp; Conditions</Link>
+              <Link to="/privacy-policy" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Privacy Policy</Link>
+              <Link to="/refund-policy" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Refund &amp; Cancellation</Link>
+              <Link to="/contact" className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">Contact Us</Link>
+            </div>
           </div>
         </footer>
 
