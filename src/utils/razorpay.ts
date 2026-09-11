@@ -86,6 +86,8 @@ export async function createSubscriptionOrder(
       },
       handler: async function (response: any) {
         try {
+          // Refresh session first: an expired token would fail server auth
+          await supabase.auth.getUser();
           const body: any = {
             plan,
             razorpay_payment_id: response.razorpay_payment_id,
@@ -101,13 +103,18 @@ export async function createSubscriptionOrder(
 
           const { data, error } = await supabase.functions.invoke('verify-payment', { body });
           if (error) {
-            console.error('Verify payment error:', error);
-            reject(new Error('Payment was successful but we could not confirm it yet. Your payment is safe — contact support with your payment ID.'));
+            // Surface the server's real reason instead of a generic message
+            const realMessage = (error as any)?.context?.error
+              || (error as any)?.context?.message
+              || error.message
+              || 'Payment could not be confirmed';
+            console.error('Verify payment error:', realMessage, error);
+            reject(new Error(`Payment received but activation failed: ${realMessage}. Your money is safe — contact support with payment ID ${response.razorpay_payment_id}.`));
             return;
           }
           resolve({ success: true, endDate: data?.end_date });
         } catch (err: any) {
-          reject(err);
+          reject(err instanceof Error ? err : new Error(String(err?.message || 'Verification failed')));
         }
       },
       modal: {
