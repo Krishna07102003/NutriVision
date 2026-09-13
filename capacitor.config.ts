@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.nutrivision.app',
-  appName: 'NutriVision',
+  appId: 'com.poshaniq.app',
+  appName: 'Poshaniq',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

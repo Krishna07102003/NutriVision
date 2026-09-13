@@ -217,7 +217,7 @@ export default function Onboarding({ formData, setFormData, step, onNext, onBack
                 Thank you for trusting us!
               </h1>
               <p className="text-[var(--text-muted)] text-base mb-6">
-                Now let's personalize NutriVision for you...
+                Now let's personalize Poshaniq for you...
               </p>
               <div className="inline-flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full px-4 py-2">
                 <span className="text-sm">🎯</span>

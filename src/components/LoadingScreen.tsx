@@ -58,7 +58,7 @@ export default function LoadingScreen({ progress, status, gender }: LoadingScree
           </div>
         </div>
         <h1 className="text-xl font-bold text-[var(--text-primary)] text-center" style={{ fontFamily: "'Georgia', serif" }}>
-          NutriVision
+          Poshaniq
         </h1>
       </div>
 

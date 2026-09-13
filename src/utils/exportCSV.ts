@@ -46,7 +46,7 @@ export function exportMeals(entries: NutritionEntry[], userName: string) {
 
   const csv = [headers.join(','), ...rows].join('\n');
   const date = new Date().toISOString().split('T')[0];
-  downloadCSV('NutriVision_Meals_' + sanitizeFilename(userName) + '_' + date + '.csv', csv);
+  downloadCSV('Poshaniq_Meals_' + sanitizeFilename(userName) + '_' + date + '.csv', csv);
 }
 
 export function exportWeight(entries: WeightEntry[], userName: string) {
@@ -57,7 +57,7 @@ export function exportWeight(entries: WeightEntry[], userName: string) {
 
   const csv = [headers.join(','), ...rows].join('\n');
   const date = new Date().toISOString().split('T')[0];
-  downloadCSV('NutriVision_Weight_' + sanitizeFilename(userName) + '_' + date + '.csv', csv);
+  downloadCSV('Poshaniq_Weight_' + sanitizeFilename(userName) + '_' + date + '.csv', csv);
 }
 
 export function exportAll(entries: NutritionEntry[], weightEntries: WeightEntry[], userName: string) {
@@ -94,5 +94,5 @@ export function exportAll(entries: NutritionEntry[], weightEntries: WeightEntry[
   ];
 
   const csv = parts.join('\n');
-  downloadCSV('NutriVision_Export_' + sanitizeFilename(userName) + '_' + date + '.csv', csv);
+  downloadCSV('Poshaniq_Export_' + sanitizeFilename(userName) + '_' + date + '.csv', csv);
 }

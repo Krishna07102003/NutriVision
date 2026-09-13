@@ -3,7 +3,7 @@ export type Language = 'en' | 'hi';
 export const translations = {
   en: {
     // Header
-    appName: 'NutriVision',
+    appName: 'Poshaniq',
     signOut: 'Sign out',
     weightLabel: 'Weight',
     heightLabel: 'Height',
@@ -136,7 +136,7 @@ export const translations = {
 
     // Disclaimer
     disclaimerTitle: 'Medical Disclaimer',
-    disclaimerText: 'NutriVision provides AI-generated nutrition estimates for informational purposes only. Always consult a healthcare professional or registered dietitian before making significant dietary changes.',
+    disclaimerText: 'Poshaniq provides AI-generated nutrition estimates for informational purposes only. Always consult a healthcare professional or registered dietitian before making significant dietary changes.',
 
     // Theme
     darkMode: 'Dark mode',
@@ -144,7 +144,7 @@ export const translations = {
   },
   hi: {
     // Header
-    appName: 'NutriVision',
+    appName: 'Poshaniq',
     signOut: 'साइन आउट',
     weightLabel: 'वज़न',
     heightLabel: 'ऊंचाई',
@@ -277,7 +277,7 @@ export const translations = {
 
     // Disclaimer
     disclaimerTitle: 'चिकित्सा अस्वीकरण',
-    disclaimerText: 'NutriVision केवल सूचना उद्देश्यों के लिए AI-जनित पोषण अनुमान प्रदान करता है। महत्वपूर्ण आहार परिवर्तनों से पहले हमेशा एक स्वास्थ्य पेशेवर या पंजीकृत आहार विशेषज्ञ से परामर्श करें।',
+    disclaimerText: 'Poshaniq केवल सूचना उद्देश्यों के लिए AI-जनित पोषण अनुमान प्रदान करता है। महत्वपूर्ण आहार परिवर्तनों से पहले हमेशा एक स्वास्थ्य पेशेवर या पंजीकृत आहार विशेषज्ञ से परामर्श करें।',
 
     // Theme
     darkMode: 'डार्क मोड',

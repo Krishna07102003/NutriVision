@@ -20,7 +20,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('NutriVision error:', error, errorInfo);
+    console.error('Poshaniq error:', error, errorInfo);
   }
 
   render() {

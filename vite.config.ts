@@ -13,9 +13,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'NutriVision - AI Nutrition Tracker',
-        short_name: 'NutriVision',
-        description: 'AI-powered gym nutrition tracker with meal logging, coaching, and meal plans',
+        name: 'Poshaniq — AI Nutrition Tracker',
+        short_name: 'Poshaniq',
+        description: 'Snap your meals, track macros and get personalized diet plans. Poshan + IQ.',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
         display: 'standalone',

@@ -7,8 +7,8 @@ const corsHeaders = {
 };
 
 const PLANS = {
-  monthly: { amount: 9900, period: "monthly", label: "NutriVision Pro Monthly" },
-  yearly: { amount: 79900, period: "yearly", label: "NutriVision Pro Yearly" },
+  monthly: { amount: 9900, period: "monthly", label: "Poshaniq Pro Monthly" },
+  yearly: { amount: 79900, period: "yearly", label: "Poshaniq Pro Yearly" },
 } as const;
 type PlanName = keyof typeof PLANS;
 

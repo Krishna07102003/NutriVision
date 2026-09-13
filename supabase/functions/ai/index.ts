@@ -81,7 +81,7 @@ serve(async (req) => {
       const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,nutrition_grades,serving_size`;
 
       const res = await fetch(searchUrl, {
-        headers: { "User-Agent": "NutriVision/1.0 (contact: nutrition@example.com)" },
+        headers: { "User-Agent": "Poshaniq/1.0 (contact: nutrition@example.com)" },
       });
 
       if (!res.ok) {

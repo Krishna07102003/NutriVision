@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-const APP_NAME = 'NutriVision';
+const APP_NAME = 'Poshaniq';
 const CONTACT_EMAIL = 'support@nutrivision.app';
 const LAST_UPDATED = 'September 11, 2026';
 

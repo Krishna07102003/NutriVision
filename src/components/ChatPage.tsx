@@ -69,7 +69,7 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
           <Bot className="w-4 h-4 text-accent" />
         </div>
         <div>
-          <h2 className="text-sm text-[var(--text-primary)] font-bold">NutriVision Coach</h2>
+          <h2 className="text-sm text-[var(--text-primary)] font-bold">Poshaniq Coach</h2>
           <p className="text-[10px] text-[var(--text-muted)]">AI-powered nutrition assistant</p>
         </div>
       </div>

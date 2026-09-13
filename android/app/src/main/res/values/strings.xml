@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">NutriVision</string>
-    <string name="title_activity_main">NutriVision</string>
-    <string name="package_name">com.nutrivision.app</string>
-    <string name="custom_url_scheme">com.nutrivision.app</string>
+    <string name="app_name">Poshaniq</string>
+    <string name="title_activity_main">Poshaniq</string>
+    <string name="package_name">com.poshaniq.app</string>
+    <string name="custom_url_scheme">com.poshaniq.app</string>
 </resources>

@@ -81,7 +81,7 @@ export default function PWAInstall() {
             <Download className="w-5 h-5 text-accent" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold">Install NutriVision</p>
+            <p className="text-sm font-bold">Install Poshaniq</p>
             <p className="text-xs text-[var(--text-muted)]">Add to home screen for offline access</p>
           </div>
           <button
@@ -108,7 +108,7 @@ export default function PWAInstall() {
               <Plus className="w-5 h-5 text-accent" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold mb-1">Install NutriVision</p>
+              <p className="text-sm font-bold mb-1">Install Poshaniq</p>
               <div className="text-xs text-[var(--text-muted)] space-y-1.5">
                 <p className="flex items-center gap-1.5">
                   <span className="font-bold text-[var(--text-secondary)]">1.</span>

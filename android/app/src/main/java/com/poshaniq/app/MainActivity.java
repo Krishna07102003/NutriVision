@@ -1,4 +1,4 @@
-package com.nutrivision.app;
+package com.poshaniq.app;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -79,7 +79,7 @@ export default function FeedbackForm({ userId, userName, onClose }: FeedbackForm
             </div>
             <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Thank You!</h3>
             <p className="text-sm text-[var(--text-muted)] mb-6">
-              Your feedback helps us make NutriVision better. We read every submission.
+              Your feedback helps us make Poshaniq better. We read every submission.
             </p>
             <button
               onClick={onClose}
@@ -150,7 +150,7 @@ export default function FeedbackForm({ userId, userName, onClose }: FeedbackForm
                   : type === 'suggestion'
                   ? "Tell us your idea. What would you love to see?"
                   : type === 'love'
-                  ? "What do you love about NutriVision?"
+                  ? "What do you love about Poshaniq?"
                   : "Share your thoughts..."
               }
               rows={4}

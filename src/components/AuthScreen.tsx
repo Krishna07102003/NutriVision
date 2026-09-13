@@ -35,7 +35,7 @@ export default function AuthScreen() {
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'com.nutrivision.app://',
+          redirectTo: 'com.poshaniq.app://',
           skipBrowserRedirect: true,
         },
       });
@@ -164,7 +164,7 @@ export default function AuthScreen() {
         <Activity className="w-6 h-6" />
       </div>
       <h2 className="text-3xl mb-3 font-serif font-bold tracking-tight text-[var(--text-primary)]">
-        Welcome to NutriVision
+        Welcome to Poshaniq
       </h2>
       <p className="text-sm text-[var(--text-muted)] max-w-sm mb-8 text-center leading-relaxed">
         Log your gym macros, generate customized 7-day meal plans, and scan food plate pictures instantly using cloud AI analytics.

@@ -74,7 +74,7 @@ export async function createSubscriptionOrder(
   return new Promise((resolve, reject) => {
     const options: any = {
       key: razorpayKey,
-      name: 'NutriVision',
+      name: 'Poshaniq',
       description: plan === 'monthly' ? 'Monthly Pro Plan — ₹99/month' : 'Yearly Pro Plan — ₹799/year',
       image: '/icon-192.png',
       prefill: {

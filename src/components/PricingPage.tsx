@@ -65,7 +65,7 @@ export default function PricingPage({ subscription }: PricingPageProps) {
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">Upgrade to Pro</h1>
         <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
-          Unlock the full power of NutriVision with AI-powered insights, unlimited coaching, and advanced analytics.
+          Unlock the full power of Poshaniq with AI-powered insights, unlimited coaching, and advanced analytics.
         </p>
       </div>
 
