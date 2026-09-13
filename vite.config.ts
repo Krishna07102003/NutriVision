@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'Poshaniq — AI Nutrition Tracker',
         short_name: 'Poshaniq',
         description: 'Snap your meals, track macros and get personalized diet plans. Poshan + IQ.',
-        theme_color: '#0a0a0a',
-        background_color: '#0a0a0a',
+        theme_color: '#090D16',
+        background_color: '#090D16',
         display: 'standalone',
         icons: [
           {
