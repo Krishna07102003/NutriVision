@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Activity, Mail, Phone, ArrowRight, ArrowLeft, Shield } from 'lucide-react';
+import { Mail, Phone, ArrowRight, ArrowLeft, Shield } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import ThemeToggle from './ThemeToggle';
+import Logo from './Logo';
 import { isValidEmail, isValidPhone, isValidOTP, sanitizeText } from '../utils/validation';
 import { checkLimit, resetRateLimit, cleanupRateLimits } from '../utils/rateLimit';
 
@@ -160,10 +161,10 @@ export default function AuthScreen() {
         <ThemeToggle />
       </div>
 
-      <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center mb-6">
-        <Activity className="w-6 h-6" />
+      <div className="mb-5">
+        <Logo size="lg" />
       </div>
-      <h2 className="text-3xl mb-3 font-serif font-bold tracking-tight text-[var(--text-primary)]">
+      <h2 className="text-2xl mb-3 font-bold tracking-tight text-[var(--text-primary)]">
         Welcome to Poshaniq
       </h2>
       <p className="text-sm text-[var(--text-muted)] max-w-sm mb-8 text-center leading-relaxed">

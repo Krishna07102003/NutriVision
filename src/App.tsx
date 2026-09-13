@@ -23,6 +23,7 @@ import LanguageToggle from './components/LanguageToggle';
 import ExportButton from './components/ExportButton';
 import Disclaimer from './components/Disclaimer';
 import DietPlan from './components/DietPlan';
+import Logo from './components/Logo';
 import RecipeBuilder from './components/RecipeBuilder';
 import Analytics from './components/Analytics';
 import { Dashboard } from './components/pages';
@@ -232,8 +233,8 @@ function AppContent() {
         <header className="header-gradient-border sticky top-0 bg-[var(--bg-base)]/90 backdrop-blur-xl z-40">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <Link to="/" className="text-base sm:text-lg font-bold tracking-tight shimmer-text hover:opacity-80 transition-opacity" style={{ fontFamily: "'Georgia', serif" }}>
-                {t('appName')}
+              <Link to="/" aria-label="Poshaniq home" className="hover:opacity-85 transition-opacity">
+                <Logo size="sm" />
               </Link>
               <nav className="hidden md:flex items-center gap-1">
                 {NAV_ITEMS.map((item) => (
@@ -547,7 +548,7 @@ function AppContent() {
         <footer className="border-t border-[var(--border-color)] mt-16">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[var(--text-muted)] text-xs">{t('appName')}</p>
+              <Logo size="sm" />
               <button
                 onClick={() => setShowFeedback(true)}
                 className="flex items-center gap-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] text-xs transition-colors"

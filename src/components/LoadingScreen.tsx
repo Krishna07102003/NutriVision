@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Logo from './Logo';
 
 interface LoadingScreenProps {
   progress: number;
@@ -51,15 +52,8 @@ export default function LoadingScreen({ progress, status, gender }: LoadingScree
       </div>
 
       {/* App Logo */}
-      <div className="mb-6">
-        <div className="w-10 h-10 mx-auto mb-3 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-[var(--accent)] rounded-lg flex items-center justify-center">
-            <span className="text-[var(--accent)] font-bold text-sm">N</span>
-          </div>
-        </div>
-        <h1 className="text-xl font-bold text-[var(--text-primary)] text-center" style={{ fontFamily: "'Georgia', serif" }}>
-          Poshaniq
-        </h1>
+      <div className="mb-6 flex flex-col items-center">
+        <Logo size="lg" />
       </div>
 
       {/* Progress Bar */}
