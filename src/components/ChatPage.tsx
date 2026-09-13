@@ -3,6 +3,7 @@ import { ArrowLeft, Send, Bot, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { sanitizeText } from '../utils/validation';
+import Logo from './Logo';
 import type { ChatMessage } from '../types';
 
 interface ChatPageProps {
@@ -65,12 +66,10 @@ export default function ChatPage({ chatHistory, chatLoading, chatMessage, setCha
         <button onClick={() => navigate('/')} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
-          <Bot className="w-4 h-4 text-accent" />
-        </div>
+        <Logo size="md" showWordmark={false} />
         <div>
           <h2 className="text-sm text-[var(--text-primary)] font-bold">Poshaniq Coach</h2>
-          <p className="text-[10px] text-[var(--text-muted)]">AI-powered nutrition assistant</p>
+          <p className="text-[10px] text-[var(--text-muted)]">Your personal nutrition IQ</p>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import Logo from './Logo';
 
 interface DietPlanProps {
   plan: string;
@@ -56,9 +57,15 @@ export default function DietPlan({ plan, onDelete }: DietPlanProps) {
     <div className="mb-12 border border-[var(--border-color)] rounded-xl bg-[var(--bg-hover)]/50 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 sm:px-8 py-5 border-b border-[var(--border-color)]">
-        <h2 className="text-xl font-bold" style={{ fontFamily: "'Georgia', serif" }}>
-          Your 7-day plan
-        </h2>
+        <div className="flex items-center gap-3">
+          <Logo size="sm" showWordmark={false} />
+          <div>
+            <h2 className="text-xl font-bold leading-tight" style={{ fontFamily: "'Georgia', serif" }}>
+              Your 7-day plan
+            </h2>
+            <p className="text-[10px] tracking-[0.15em] uppercase text-[var(--text-muted)] font-semibold">Poshaniq Coach</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={allExpanded ? collapseAll : expandAll}
